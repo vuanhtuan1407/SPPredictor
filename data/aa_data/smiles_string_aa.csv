@@ -1,0 +1,24 @@
+amino_acid,abbreviations,short_abbreviations,weight,smiles_drugbank,smiles_convert
+Alanine,Ala,A,89,C[C@H](N)C(O)=O,N[C@@H](C)C(=O)O
+Arginine,Arg,R,174,N[C@@H](CCCNC(N)=N)C(O)=O,N[C@@H](CCCNC(N)=N)C(=O)O
+Asparagine,Asn,N,132,N[C@@H](CC(N)=O)C(O)=O,N[C@@H](CC(N)=O)C(=O)O
+Aspartic acid,Asp,D,133,N[C@@H](CC(O)=O)C(O)=O,N[C@@H](CC(O)=O)C(=O)O
+Cysteine,Cys,C,121,N[C@@H](CS)C(O)=O,N[C@@H](CS)C(=O)O
+Glutamic acid,Glu,E,147,N[C@@H](CCC(O)=O)C(O)=O,N[C@@H](CCC(O)=O)C(=O)O
+Glutamine,Gln,Q,146,N[C@@H](CCC(N)=O)C(O)=O,N[C@@H](CCC(N)=O)C(=O)O
+Glycine,Gly,G,75,NCC(O)=O,NCC(=O)O
+Histidine,His,H,155,N[C@@H](CC1=CNC=N1)C(O)=O,N[C@@H](CC1=CNC=N1)C(=O)O
+Isoleucine,Ile,I,131,CC[C@H](C)[C@H](N)C(O)=O,N[C@@H][C@H](CC)(C)C(=O)O
+Leucine,Leu,L,131,CC(C)C[C@H](N)C(O)=O,N[C@@H](CC(C)C)C(=O)O
+Lysine,Lys,K,146,NCCCC[C@H](N)C(O)=O,N[C@@H](CCCCN)C(=O)O
+Methionine,Met,M,149,CSCC[C@H](N)C(O)=O,N[C@@H](CCSC)C(=O)O
+Phenylalanine,Phe,F,165,N[C@@H](CC1=CC=CC=C1)C(O)=O,N[C@@H](CC1=CC=CC=C1)C(=O)O
+Proline,Pro,P,115,OC(=O)[C@@H]1CCCN1,N1[C@@H](CCC1)C(=O)O
+Serine,Ser,S,105,N[C@@H](CO)C(O)=O,N[C@@H](CO)C(=O)O
+Threonine,Thr,T,119,C[C@@H](O)[C@H](N)C(O)=O,N[C@@H][C@H](O)(C)C(=O)O
+Tryptophan,Trp,W,204,N[C@@H](CC1=CNC2=C1C=CC=C2)C(O)=O,N[C@@H](CC1=CNC2=C1C=CC=C2)C(=O)O
+Tyrosine,Tyr,Y,181,N[C@@H](CC1=CC=C(O)C=C1)C(O)=O,N[C@@H](CC1=CC=C(O)C=C1)C(=O)O
+Valine,Val,V,117,CC(C)[C@H](N)C(O)=O,N[C@@H](CC(C))C(=O)O
+Selenocysteine,Sec,U,,[UNK],[UNK]
+Pyrrolysine,Pyl,O,,[UNK],[UNK]
+Unknown,Unk,,,[UNK],[UNK]

@@ -1,0 +1,4 @@
+{
+  "max_len": 80,
+  "tokenizer_path": "tokenizer/tokenizer_aa.json"
+}
