@@ -21,10 +21,8 @@ class SPDataModule(L.LightningDataModule):
         self.dataset_type = dataset_type
 
     # def prepare_data(self) -> None:
-    #     data_utils = DataUtils()
-    #     data_utils.extract_raw_dataset_by_partition(raw_path=str(Path(ROOT_DIR) / configs.TRAIN_PATH))
-    #     # data_utils.extract_raw_dataset_by_partition(raw_path=str(Path(ROOT_DIR) / configs.BENCHMARK_PATH),
-    #     #                                             benchmark=True)
+    #     dut.extract_raw_dataset_by_partition(raw_path=str(Path(ROOT_DIR) / params.TRAIN_PATH))
+    #     dut.extract_raw_dataset_by_partition(raw_path=str(Path(ROOT_DIR) / params.BENCHMARK_PATH), benchmark=True)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit" or stage is None:
