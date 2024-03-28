@@ -42,7 +42,7 @@ class TransformerClassifier(nn.Module):
 
 
 if __name__ == '__main__':
-    config = json.load(open('../configs/transformer_config_default.json'))
+    config = json.load(open('../configs/model_configs/transformer_config_default.json'))
     model = TransformerClassifier(config)
     print(model)
     print(model.state_dict().keys())

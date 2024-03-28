@@ -227,13 +227,13 @@ class SPModule(L.LightningModule):
             config = BertConfig().from_pretrained("Rostlab/prot_bert")
             return config
         elif model_type == "bert":
-            with open(str(Path(params.ROOT_DIR) / f'configs/{model_type}_config_default.json')) as f:
+            with open(str(Path(params.ROOT_DIR) / f'configs/model_configs/{model_type}_config_default.json')) as f:
                 data = json.load(f)
                 config = BertConfig(**data)
                 return config
         else:
             if config_path is None:
-                with open(str(Path(params.ROOT_DIR) / f'configs/{model_type}_config_default.json')) as f:
+                with open(str(Path(params.ROOT_DIR) / f'configs/ model_configs/{model_type}_config_default.json')) as f:
                     config = json.load(f)
                     return config
             else:

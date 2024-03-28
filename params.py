@@ -5,7 +5,6 @@ import torch
 TRAIN_PATH = 'data/sp_data/train_set.fasta'
 BENCHMARK_PATH = 'data/sp_data/benchmark_set_sp5.fasta'
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-# TRANSFORMER_CONFIG_DEFAULT = 'configs/transformer_config_default.json'
 
 EPOCHS = 3
 

@@ -30,6 +30,6 @@ class LSTMClassifier(nn.Module):
 
 
 if __name__ == '__main__':
-    configs = json.load(open('../configs/lstm_config_default.json'))
+    configs = json.load(open('../configs/model_configs/lstm_config_default.json'))
     model = LSTMClassifier(configs)
     print(model)
