@@ -6,6 +6,26 @@ from torch import nn
 import params
 
 
+class OrganismEmbedding(nn.Module):
+    """
+    Parameters `num_orgs` and `e_dim` must be the same
+    """
+
+    def __init__(self, num_orgs: int = 4, e_dim: int = 4):
+        super().__init__()
+        self.num_orgs = num_orgs
+        self.embedding_dim = e_dim
+        oe = torch.zeros(num_orgs, e_dim)
+        for i in range(num_orgs):
+            oe[i, i] = 1
+        # oe = oe.unsqueeze(0)
+        # self.register_buffer('oe', oe)
+        self.oe = nn.Embedding.from_pretrained(torch.FloatTensor(oe), freeze=False)
+
+    def forward(self, x):
+        return self.oe(x)
+
+
 class InputEmbedding(nn.Module):
     def __init__(self, vocab_size: int = 100, d_model: int = 512):
         super().__init__()
@@ -18,7 +38,6 @@ class InputEmbedding(nn.Module):
 
     def forward(self, x):
         x = self.input_embedding(x) * math.sqrt(self.d_model)
-        # print(x.shape)
         return x
 
 
@@ -35,17 +54,19 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        pe_x = self.pe[:, :x.size(1), :].requires_grad_(True)
+        pe_x = self.pe[:, :x.size(1), :]
         x = x + pe_x
         return self.dropout(x)
 
 
-class LinearPositionalEncoding(nn.Module):
-    def __init__(self):
+class LinearPositionalEmbedding(nn.Module):
+    def __init__(self, vocab_size: int, d_model: int = 512, dropout: float = 0.1):
         super().__init__()
+        self.pe = nn.Embedding(num_embeddings=vocab_size, embedding_dim=d_model)
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
-        pass
+        return self.pe(x)
 
 
 class TransformerEncoder(nn.Module):
