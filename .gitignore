@@ -92,4 +92,5 @@ checkpoints/*
 # zip files
 *.zip
 
-
+# Big data file
+data/sp_data/uniprot_sprot.fasta
