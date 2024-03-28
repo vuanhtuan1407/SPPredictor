@@ -81,7 +81,8 @@ fabric.properties
 logs/*
 
 # Extracted data
-data/sp_data/*.json
+data/sp_data/*
+
 
 # Restore
 restore
@@ -91,6 +92,3 @@ checkpoints/*
 
 # zip files
 *.zip
-
-# Big data file
-data/sp_data/uniprot_sprot.fasta
