@@ -49,8 +49,8 @@ def get_smiles_of_prot(prot: str):
     """
     smiles_prot = ''
     for aa in prot:
-        smiles_prot = smiles_prot + get_smiles_string_aa(short_abbreviation=aa)
-
+        # Need remove element Oxygen at the end of sequence to make residue
+        smiles_prot = smiles_prot[:-1] + get_smiles_string_aa(short_abbreviation=aa)
     return smiles_prot
 
 
@@ -64,7 +64,7 @@ def create_smiles_training_tokenizer():
         smiles_prot.append(get_smiles_of_prot(aa_seq))
 
     with open(ut.get_absolute_path(SMILES_CORPUS_PATH), 'w') as f:
-        f.writelines(smiles_prot)
+        f.writelines('\n'.join(smiles_prot))
 
 
 def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: bool = False):
