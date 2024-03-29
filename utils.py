@@ -13,8 +13,8 @@ import params
 
 
 def get_absolute_path(path):
-    apath = str(Path(params.ROOT_DIR) / path)
-    if not os.path.exists(apath):
-        raise FileNotFoundError("Path does not exist")
-    else:
-        return apath
+    return str(Path(params.ROOT_DIR) / path)
+    # if not os.path.exists(apath):
+    #     raise FileNotFoundError("Path does not exist")
+    # else:
+    #     return apath

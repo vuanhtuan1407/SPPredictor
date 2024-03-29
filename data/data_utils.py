@@ -59,7 +59,7 @@ def create_smiles_training_tokenizer():
     src_path = ut.get_absolute_path(UNIPROT_PATH)
     records = SeqIO.parse(src_path, 'fasta')
     smiles_prot = []
-    for record in records:
+    for record in tqdm(records, total=len(records)):
         aa_seq = str(record.seq)
         smiles_prot.append(get_smiles_of_prot(aa_seq))
 

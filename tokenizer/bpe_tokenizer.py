@@ -26,7 +26,7 @@ def train_bpe_tokenizer():
 
     # Trainer
     special_tokens = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    trainer = BpeTrainer(special_tokens=special_tokens)
+    trainer = BpeTrainer(vocab_size=100, special_tokens=special_tokens)
 
     # Post-processing
     tokenizer.post_processor = TemplateProcessing(
@@ -45,6 +45,8 @@ def train_bpe_tokenizer():
     corpus_path = ut.get_absolute_path(dut.SMILES_CORPUS_PATH)
     if not os.path.exists(corpus_path):
         dut.create_smiles_training_tokenizer()
+    else:
+        print('File already existed')
 
     tokenizer.train(files=[corpus_path], trainer=trainer)
     tokenizer.save(SAVE_PATH)
