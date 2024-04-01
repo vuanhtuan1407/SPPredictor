@@ -61,7 +61,7 @@ def create_smiles_training_tokenizer():
     smiles_prot = []
     for record in tqdm(records):
         aa_seq = str(record.seq)
-        if ('U' or 'O') not in aa_seq:
+        if ('U' or 'O') not in aa_seq:  # ignore proteins having 2 special amino acids U and O
             smiles_prot.append(get_smiles_of_prot(aa_seq))
 
     with open(ut.get_absolute_path(SMILES_CORPUS_PATH), 'w') as f:

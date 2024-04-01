@@ -44,13 +44,16 @@ def train_bpe_tokenizer():
     # Training
     corpus_path = ut.get_absolute_path(dut.SMILES_CORPUS_PATH)
     if not os.path.exists(corpus_path):
+        print("File not found. Creating new corpus file...")
         dut.create_smiles_training_tokenizer()
-        print('Done')
+        print('Creating finished')
     else:
         print('File already existed')
 
+    print("Training tokenizer")
     tokenizer.train(files=[corpus_path], trainer=trainer)
     tokenizer.save(SAVE_PATH)
+    print('Training finished')
 
 
 if __name__ == "__main__":

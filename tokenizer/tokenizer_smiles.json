@@ -200,8 +200,7 @@
       "NK": 46,
       "UNK": 47,
       "UNKN": 48,
-      "UNKNCC": 49,
-      "UNKN1": 50
+      "UNKNCC": 49
     },
     "merges": [
       "C C",
@@ -233,8 +232,7 @@
       "N K",
       "U NK",
       "UNK N",
-      "UNK NCC",
-      "UNK N1"
+      "UNK NCC"
     ]
   }
 }
