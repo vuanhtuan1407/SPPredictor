@@ -1,7 +1,6 @@
 import json
 import os.path
-from pathlib import Path
-from typing import Literal, Any
+from typing import Any
 
 import lightning as L
 import numpy as np
@@ -15,6 +14,7 @@ from torchmetrics import F1Score, MatthewsCorrCoef, AveragePrecision
 from transformers import BertConfig, BertModel
 
 import params
+import utils as ut
 from model.sp_bilstm import StackedBiLSTMClassifier
 from model.sp_cnn import ConvolutionalClassifier
 from model.sp_cnn_transformer import CNNTransformerClassifier
@@ -27,25 +27,20 @@ from model.sp_transformer import TransformerClassifier
 
 
 class SPModule(L.LightningModule):
-    def __init__(
-            self,
-            model_type: Literal['transformer', 'st_bilstm', 'cnn'] = 'transformer',
-            config_path: str | None = None
-
-    ):
+    def __init__(self):
         super().__init__()
         # TODO: reduce weights by decreasing rate of class NO_SP (Do with last networks but results still low)
         loss_weight = torch.tensor([0.5, 1, 1, 1, 1, 1], dtype=torch.float)
         self.loss_fn = CrossEntropyLoss(weight=loss_weight)
-        self.model_type = model_type
         self.save_hyperparameters()
         # self.fabric = Fabric()
 
-        # Load config (Remove if unnecessary)
-        self.config = self.__load_model_config(model_type=model_type, config_path=config_path)
+        # Load _config (Remove if unnecessary)
+        # self.config = self.__load_model_config(model_type=model_type, config_path=config_path)
 
         # Load model
-        self.model = self.__load_model(model_type=model_type, config_path=config_path)
+        self.model_type = params.MODEL
+        self.model = self.__load_model()
 
         # Load metrics
         self.f1 = F1Score(task='multiclass', num_classes=len(params.SP_LABELS), average='micro')
@@ -82,14 +77,14 @@ class SPModule(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         _, _, pred, loss, _ = self.base_step(batch, batch_idx)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True, batch_size=params.BATCH_SIZE)
         return loss
 
     def validation_step(self, batch, batch_idx):
         _, lb, pred, loss, _ = self.base_step(batch, batch_idx)
         self.validation_step_outputs_pred.append(pred)
         self.validation_step_outputs_lb.append(lb)
-        self.log("val_loss", loss, prog_bar=True, sync_dist=True)
+        self.log("val_loss", loss, prog_bar=True, sync_dist=True, batch_size=params.BATCH_SIZE)
         # return loss
 
     def on_validation_epoch_end(self):
@@ -149,7 +144,7 @@ class SPModule(L.LightningModule):
 
     def on_test_end(self) -> None:
         # TODO: statistic on each class (Do with each class of all outputs, in case of each class in each kingdom
-        #  requires re-training (not sure, may be just adjust some lines in test step)
+        #  requires re-training (not sure, may be just adjust some lines in test_step func)
 
         # Apply argmax on these outputs (only for label) and evaluate the metric results
         print(classification_report(self.test_outputs_lb, self.test_outputs_pred))
@@ -195,73 +190,71 @@ class SPModule(L.LightningModule):
             "Average Precision Score": average_precision_test
         }
 
-        # self.__save_metrics_to_csv(metric_dict)
+        self.__save_metrics_to_csv(metric_dict)
 
-    def __save_results_to_txt(self, test_prediction_results, test_true_results, kingdom):
-        if not os.path.exists(str(Path(params.ROOT_DIR) / "out")):
+    def __load_model(self):
+        """
+        Load model to Lightning Module
+        """
+        # TODO: combine CNN + Transformer; LSTM; ProtBert pretrained:
+        #  transformer and lstm models are overfit then the CNN + Trans also has low results and so do lstm
+        config = self.__load_model_config(params.MODEL, params.CONF_TYPE)
+        if params.MODEL == 'transformer':
+            return TransformerClassifier(config)
+        elif params.MODEL == 'cnn':
+            return ConvolutionalClassifier(config)
+        elif params.MODEL == 'st_bilstm':
+            return StackedBiLSTMClassifier(config)
+        elif params.MODEL == "bert_pretrained" or params.MODEL == "bert":
+            return BertModel(config)
+        elif params.MODEL == "lstm":
+            return LSTMClassifier(config)
+        elif params.MODEL == "cnn_trans":
+            return CNNTransformerClassifier(config)
+        else:
+            return ValueError("Unknown model type")
+
+    @staticmethod
+    def __save_results_to_txt(test_prediction_results, test_true_results, kingdom):
+        if not os.path.exists(ut.abspath("out")):
             os.makedirs('out', exist_ok=True)
         softmax = Softmax()
-        pred_path = f'out/{kingdom}_test_prediction_results_by_{self.model_type}.txt'
+        pred_path = f'out/{kingdom}_test_prediction_results_by_{params.MODEL}.txt'
         true_path = f'out/{kingdom}_test_true_results.txt'
 
         # print(test_prediction_results)
 
-        np.savetxt(str(Path(params.ROOT_DIR) / pred_path), softmax(test_prediction_results), fmt="%.4f")
-        np.savetxt(str(Path(params.ROOT_DIR) / true_path), test_true_results, fmt="%d")
+        np.savetxt(ut.abspath(pred_path), softmax(test_prediction_results), fmt="%.4f")
+        np.savetxt(ut.abspath(true_path), test_true_results, fmt="%d")
 
-    def __save_metrics_to_csv(self, metric_dict):
+    @staticmethod
+    def __save_metrics_to_csv(metric_dict):
         version = 0
-        while os.path.exists(str(Path(params.ROOT_DIR) / f'out/{self.model_type}_metrics_results_{version}.csv')):
+        while os.path.exists(ut.abspath(f'out/{params.MODEL}_metrics_results_{version}.csv')):
             version += 1
 
         df = pd.DataFrame().from_dict(metric_dict)
-        df.to_csv(str(Path(params.ROOT_DIR) / f'out/{self.model_type}_metrics_results_{version}.csv'), index_label="No")
+        df.to_csv(ut.abspath(f'out/{params.MODEL}_metrics_results_{version}.csv'), index_label="No")
 
     @staticmethod
-    def __save_config():
-        pass
-
-    @staticmethod
-    def __load_model_config(model_type, config_path: str | None = None):
-        if model_type == "bert_pretrained":
+    def __load_model_config(model, conf_type: str | None = None):
+        if model == "bert_pretrained":
             config = BertConfig().from_pretrained("Rostlab/prot_bert")
             return config
-        elif model_type == "bert":
-            with open(str(Path(params.ROOT_DIR) / f'configs/model_configs/{model_type}_config_default.json')) as f:
+        elif model == "bert":
+            with open(ut.abspath(f'configs/model_configs/{model}_config_default.json')) as f:
                 data = json.load(f)
                 config = BertConfig(**data)
                 return config
         else:
-            if config_path is None:
-                with open(str(Path(params.ROOT_DIR) / f'configs/ model_configs/{model_type}_config_default.json')) as f:
+            conf_type = 'default' if conf_type is None else conf_type
+            conf_path = ut.abspath(f'configs/model_configs/{model}_config_{conf_type}.json')
+            if os.path.exists(conf_path):
+                with open(conf_path, 'r') as f:
                     config = json.load(f)
                     return config
             else:
-                if not os.path.exists(str(Path(params.ROOT_DIR) / config_path)):
-                    raise FileNotFoundError("Config file does not exist")
-                else:
-                    with open(config_path, 'r') as f:
-                        config = json.load(f)
-                        return config
-
-    def __load_model(self, model_type, config_path: str | None = None):
-        # TODO: combine CNN + Transformer; LSTM; ProtBert pretrained:
-        #  transformer and lstm models are overfitting then the CNN + Trans also has low results and so do lstm
-        config = self.__load_model_config(model_type, config_path)
-        if model_type == 'transformer':
-            return TransformerClassifier(config)
-        elif model_type == 'cnn':
-            return ConvolutionalClassifier(config)
-        elif model_type == 'st_bilstm':
-            return StackedBiLSTMClassifier(config)
-        elif model_type == "bert_pretrained" or model_type == "bert":
-            return BertModel(config)
-        elif model_type == "lstm":
-            return LSTMClassifier(config)
-        elif model_type == "cnn_trans":
-            return CNNTransformerClassifier(config)
-        else:
-            return ValueError("Unknown model type")
+                raise FileNotFoundError("Config file does not exist")
 
     @staticmethod
     def __unfreeze(layer):

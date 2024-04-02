@@ -11,9 +11,9 @@ from tqdm import tqdm
 import params
 import utils as ut
 
-AA_DATA = pd.read_csv(ut.get_absolute_path('data/aa_data/smiles_string_aa.csv'))  # Load data into DataFrame
-UNIPROT_PATH = 'data/sp_data/uniprot_sprot.fasta'
-SMILES_CORPUS_PATH = 'data/sp_data/uniprot_smiles.txt'
+AA_DATA = pd.read_csv(ut.abspath('data/aa_data/smiles_string_aa.csv'))  # Load data into DataFrame
+UNIPROT_PATH = ut.abspath('data/sp_data/uniprot_sprot.fasta')
+SMILES_CORPUS_PATH = ut.abspath('data/sp_data/uniprot_smiles.txt')
 
 
 # *** PUBLIC FUNCTION *** #
@@ -56,7 +56,7 @@ def get_smiles_of_prot(prot: str):
 
 def create_smiles_training_tokenizer():
     # Extract uniprot from aa sequence to smiles
-    src_path = ut.get_absolute_path(UNIPROT_PATH)
+    src_path = UNIPROT_PATH
     records = SeqIO.parse(src_path, 'fasta')
     smiles_prot = []
     for record in tqdm(records):
@@ -64,7 +64,7 @@ def create_smiles_training_tokenizer():
         if 'U' not in aa_seq and 'O' not in aa_seq:  # ignore proteins having 2 special amino acids U and O
             smiles_prot.append(get_smiles_of_prot(aa_seq))
 
-    with open(ut.get_absolute_path(SMILES_CORPUS_PATH), 'w') as f:
+    with open(SMILES_CORPUS_PATH, 'w') as f:
         f.writelines('\n'.join(smiles_prot))
 
 
@@ -124,4 +124,4 @@ def __create_smiles_benchmark_json(partitioned_prot):
 
 if __name__ == "__main__":
     extract_raw_dataset_by_partition()
-    extract_raw_dataset_by_partition(raw_path=str(Path(params.ROOT_DIR) / params.BENCHMARK_PATH), benchmark=True)
+    extract_raw_dataset_by_partition(raw_path=str(Path(ut.ROOT_DIR) / params.BENCHMARK_PATH), benchmark=True)

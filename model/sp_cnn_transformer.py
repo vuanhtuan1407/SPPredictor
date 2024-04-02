@@ -47,7 +47,7 @@ class CNNTransformerClassifier(nn.Module):
 
 
 if __name__ == '__main__':
-    # config = None
+    # _config = None
     x = torch.randn(8, 30, 1)
     with open(str(Path(params.ROOT_DIR) / f'configs/cnn_trans_config_default.json')) as f:
         config = json.load(f)

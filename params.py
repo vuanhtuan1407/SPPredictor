@@ -1,25 +1,27 @@
-import os
-
-import torch
+from typing import Union
 
 TRAIN_PATH = 'data/sp_data/train_set.fasta'
 BENCHMARK_PATH = 'data/sp_data/benchmark_set_sp5.fasta'
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-EPOCHS = 3
-
-"""
-MODEL CONFIGURATION
-"""
 SP_LABELS = dict(NO_SP=0, SP=1, LIPO=2, TAT=3, PILIN=4, TATLIPO=5)
 KINGDOM = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=1)
+
+"""
+MODEL AND TRAINING CONFIGURATION
+"""
+ENV = 'local'
+EPOCHS = 3
 BATCH_SIZE = 8
-MODEL = 'transformer'
+MODEL = 'cnn'
 DATA = 'aa'
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+CONF_TYPE = 'default'
+DEVICES: Union[list[int], str, int] = 'auto'
+ACCELERATOR = 'auto'
+
+DEVICE = 'cpu'  # use for apply old training process
 
 """
 LOGGER CONFIGURATION
 """
 KAGGLE_DIR = '/kaggle/working'
-DEFAULT_LOG_DIR = 'logs'
+LOG_DIR = 'logs'

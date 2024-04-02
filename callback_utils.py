@@ -1,12 +1,36 @@
+import sys
 from pathlib import Path
 
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-from lightning.pytorch.callbacks import RichProgressBar
+from lightning.pytorch.callbacks import RichProgressBar, TQDMProgressBar
 from lightning.pytorch.callbacks.progress.rich_progress import RichProgressBarTheme
 
 import params
+import utils as ut
 
-# create your own theme!
+
+class CustomTQDMProgressBar(TQDMProgressBar):
+    def init_validation_tqdm(self):
+        bar = super().init_validation_tqdm()
+        if not sys.stdout.isatty():
+            bar.disable = True
+        return bar
+
+    def init_test_tqdm(self):
+        bar = super().init_test_tqdm()
+        if not sys.stdout.isatty():
+            bar.disable = True
+        return bar
+
+    def init_predict_tqdm(self):
+        bar = super().init_predict_tqdm()
+        if not sys.stdout.isatty():
+            bar.disable = True
+        return bar
+
+
+tqdm_progress_bar = CustomTQDMProgressBar()
+
 rich_progress_bar = RichProgressBar(
     theme=RichProgressBarTheme(
         description="green_yellow",
@@ -23,8 +47,8 @@ rich_progress_bar = RichProgressBar(
 )
 
 model_checkpoint = ModelCheckpoint(
-    dirpath=str(Path(params.ROOT_DIR) / 'checkpoints'),
-    filename=f"{params.MODEL}_epoch={params.EPOCHS}",
+    dirpath=str(Path(ut.ROOT_DIR) / 'checkpoints'),
+    filename=f"{params.MODEL}_epoch={params.EPOCHS}_{params.ENV}",
     enable_version_counter=True,
     monitor='val_loss',
     every_n_epochs=1,

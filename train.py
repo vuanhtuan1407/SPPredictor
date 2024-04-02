@@ -1,79 +1,43 @@
-import json
-from pathlib import Path
+import argparse
+from typing import Union
 
-import torch
-from sklearn.metrics import classification_report
-from torch import nn
-from torch.utils.data import DataLoader
-from tqdm import tqdm
+import lightning as L
+from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 
-from data.sp_dataset import SPDataset
-from model.sp_transformer import TransformerClassifier
-from params import ROOT_DIR, DATA, BATCH_SIZE, MODEL, DEVICE, EPOCHS
-
-
-def __load_model(model):
-    pass
+import params
+import utils as ut
+from callback_utils import model_checkpoint, early_stopping, tqdm_progress_bar
+from lightning_module.sp_data_module import SPDataModule
+from lightning_module.sp_module import SPModule
 
 
-def train():
-    # LOAD DATASET
-    train_set = SPDataset(
-        json_paths=[str(Path(ROOT_DIR) / 'data/sp_data/train_set_partition_0.json'),
-                    str(Path(ROOT_DIR) / 'data/sp_data/train_set_partition_1.json')],
-        data_type=DATA
-    )
-    val_set = SPDataset(
-        json_paths=[str(Path(ROOT_DIR) / 'data/sp_data/test_set_partition_0.json'),
-                    str(Path(ROOT_DIR) / 'data/sp_data/test_set_partition_1.json')],
-        data_type=DATA
-    )
-    train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=False)
-    val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
+def parse_arguments():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('--process', type=str, default='train', choices=['train', 'test', 'full'])
+    arg_parser.add_argument('--env', type=str, default='local')
+    arg_parser.add_argument('--log-dir', type=str, default='/logs')
+    arg_parser.add_argument('--devices', type=Union[list[int], str, int], default='auto')
+    # accelerator can be 'cpu', 'gpu', 'tpu' or use 'auto' instead of do not want to specify
+    arg_parser.add_argument('--accelerator', type=str, default='auto')
 
-    # LOAD MODEL
-    config = json.load(open(str(Path(ROOT_DIR) / f'configs/{MODEL}_config_default.json')))
-    model = TransformerClassifier(config).to(DEVICE)
-
-    # OPTIM AND LOSS
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-    loss_fn = nn.CrossEntropyLoss()
-
-    # TRAIN PROCESS
-    for epoch in range(EPOCHS):
-        print('Epoch {}/{}:'.format(epoch + 1, EPOCHS))
-        model.train()
-        if torch.cuda.device_count() > 1:
-            torch.distributed.init_process_group(
-                backend='nccl', world_size=torch.cuda.device_count()
-            )
-            model = torch.nn.parallel.DistributedDataParallel(model)
-        for _, batch in enumerate(tqdm(train_loader)):
-            optimizer.zero_grad()
-            x, lb, kingdom = batch
-            x = x.to(DEVICE)
-            lb = lb.to(DEVICE)
-            # kingdom = kingdom.to(DEVICE)
-            pred = model(x)
-            loss = loss_fn(pred.float(), lb.float())
-            loss.backward()
-            optimizer.step()
-
-        val_outputs_lb = []
-        val_outputs_pred = []
-        model.eval()
-        for _, batch in enumerate(val_loader):
-            x, lb, kingdom = batch
-            x = x.to(DEVICE)
-            lb = lb.to(DEVICE)
-            pred = model(x)
-            val_outputs_lb.extend(lb)
-            val_outputs_pred.extend(pred)
-
-        all_lb = torch.argmax(torch.tensor(val_outputs_lb, device=DEVICE))
-        all_pred = torch.argmax(torch.tensor(val_outputs_pred, device=DEVICE))
-        print(classification_report(all_lb, all_pred))
+    return arg_parser.parse_args()
 
 
 if __name__ == '__main__':
-    train()
+    # CLI parsing arguments
+    # args = parse_arguments()
+    log_dir = params.KAGGLE_DIR if params.ENV == 'kaggle' else ut.abspath(params.LOG_DIR)
+    logger = TensorBoardLogger(save_dir=log_dir, name='tensorboard')
+
+    sp_module = SPModule()
+    sp_data_module = SPDataModule()
+    trainer = L.Trainer(
+        devices=params.DEVICES,
+        accelerator=params.ACCELERATOR,
+        max_epochs=params.EPOCHS,
+        val_check_interval=1.0,
+        logger=logger,
+        callbacks=[model_checkpoint, early_stopping, tqdm_progress_bar]
+    )
+
+    trainer.fit(sp_module, datamodule=sp_data_module)

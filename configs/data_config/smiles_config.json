@@ -1,4 +1,4 @@
 {
   "max_len": 2000,
-  "tokenizer_path": "tokenizer/tokenizer.json"
+  "tokenizer_path": "tokenizer/tokenizer_smiles.json"
 }
