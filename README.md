@@ -1,6 +1,7 @@
 # TODO
 
 ## Important: re-code the training process because all the models to learn global context have low results on the test set
+
 ## Find out why CNN is less affected by the current training process.
 
 1. Dataset split
@@ -33,3 +34,8 @@
 
 6. Visualization
 
+## Moving to smiles
+
+1. find which is the best smiles annotation
+2. training tokenizer with swiss-reviewed uniprot
+3. training with CNN and transformer

@@ -4,6 +4,7 @@ import lightning as L
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader
 
+import data.data_utils as dut
 import params
 import utils as ut
 from data.sp_dataset import SPDataset
@@ -17,9 +18,9 @@ class SPDataModule(L.LightningDataModule):
         self.train_set = None
         self.batch_size = params.BATCH_SIZE
 
-    # def prepare_data(self) -> None:
-    #     dut.extract_raw_dataset_by_partition(raw_path=ut.abspath(params.TRAIN_PATH)
-    #     dut.extract_raw_dataset_by_partition(raw_path=ut.abspath(params.BENCHMARK_PATH), benchmark=True)
+    def prepare_data(self) -> None:
+        dut.extract_raw_dataset_by_partition(raw_path=ut.abspath(params.TRAIN_PATH))
+        dut.extract_raw_dataset_by_partition(raw_path=ut.abspath(params.BENCHMARK_PATH), benchmark=True)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit" or stage is None:

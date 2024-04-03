@@ -30,13 +30,16 @@ class SPModule(L.LightningModule):
     def __init__(self):
         super().__init__()
         # TODO: reduce weights by decreasing rate of class NO_SP (Do with last networks but results still low)
-        loss_weight = torch.tensor([0.5, 1, 1, 1, 1, 1], dtype=torch.float)
+        loss_weight = torch.tensor([1, 1, 1, 1, 1, 1], dtype=torch.float)
         self.loss_fn = CrossEntropyLoss(weight=loss_weight)
         self.save_hyperparameters()
         # self.fabric = Fabric()
 
         # Load _config (Remove if unnecessary)
         # self.config = self.__load_model_config(model_type=model_type, config_path=config_path)
+
+        # Tokenizer
+        self.tokenizer = None
 
         # Load model
         self.model_type = params.MODEL
@@ -60,7 +63,7 @@ class SPModule(L.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.model.parameters(), lr=1e-3, weight_decay=0.1)
+        optimizer = optim.Adam(self.model.parameters(), lr=1e-4, weight_decay=0.1)
         return optimizer
 
     def optimizer_zero_grad(self, epoch: int, batch_idx: int, optimizer: Optimizer):
@@ -68,6 +71,9 @@ class SPModule(L.LightningModule):
 
     def backward(self, loss: Tensor, *args: Any, **kwargs: Any):
         loss.backward()
+
+    def tokenize_input(self, x):
+        pass
 
     def base_step(self, batch, batch_idx):
         x, lb, kingdom = batch
@@ -77,7 +83,8 @@ class SPModule(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         _, _, pred, loss, _ = self.base_step(batch, batch_idx)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True, batch_size=params.BATCH_SIZE)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True,
+                 batch_size=params.BATCH_SIZE)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -103,7 +110,7 @@ class SPModule(L.LightningModule):
         self.average_precision.update(all_pred, all_lb)
 
         print(
-            f"\nError on validation set: "
+            f"\nMetrics on validation set: "
             f"best_val_loss: {self.best_val_loss}, "
             f"f1: {self.f1.compute()}, "
             f"mcc: {self.mcc.compute()}, "
@@ -173,7 +180,7 @@ class SPModule(L.LightningModule):
             average_precision_test.append(self.average_precision.compute().item())
 
             print(
-                f'\nError on test set of {key}: '
+                f'\nMetrics on test set of {key}: '
                 f'f1: {self.f1.compute()}, '
                 f'mcc: {self.mcc.compute()}, '
                 f'average_precision: {self.average_precision.compute()} \n'

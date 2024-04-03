@@ -12,7 +12,7 @@ MODEL AND TRAINING CONFIGURATION
 ENV = 'local'
 EPOCHS = 3
 BATCH_SIZE = 8
-MODEL = 'cnn'
+MODEL = 'transformer'
 DATA = 'aa'
 CONF_TYPE = 'default'
 DEVICES: Union[list[int], str, int] = 'auto'

@@ -2,7 +2,9 @@ import argparse
 from typing import Union
 
 import lightning as L
-from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
+import wandb
+# from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
+from lightning.pytorch.loggers import WandbLogger
 
 import params
 import utils as ut
@@ -27,7 +29,9 @@ if __name__ == '__main__':
     # CLI parsing arguments
     # args = parse_arguments()
     log_dir = params.KAGGLE_DIR if params.ENV == 'kaggle' else ut.abspath(params.LOG_DIR)
-    logger = TensorBoardLogger(save_dir=log_dir, name='tensorboard')
+    # logger = TensorBoardLogger(save_dir=log_dir, name='tensorboard')
+    logger = WandbLogger(save_dir=log_dir, name='wandb', project='SPPredictor')
+    logger.experiment.config["batch_size"] = params.BATCH_SIZE
 
     sp_module = SPModule()
     sp_data_module = SPDataModule()
@@ -41,3 +45,5 @@ if __name__ == '__main__':
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)
+
+    wandb.finish(quiet=True)

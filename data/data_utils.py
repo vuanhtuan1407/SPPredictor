@@ -68,10 +68,11 @@ def create_smiles_training_tokenizer():
         f.writelines('\n'.join(smiles_prot))
 
 
-def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: bool = False):
+def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: bool = False, include_smiles: bool = True):
     """
     Extract raw dataset by partition.
 
+    :param include_smiles: Include smiles convert in the dataset
     :param benchmark: Define whether raw data will be used for benchmarking or not?
     :param raw_path: Path to raw data, defaults to `train_set.fasta`
     """
@@ -79,15 +80,18 @@ def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: boo
     partitioned_prot = {}
 
     records = SeqIO.parse(raw_path, 'fasta')
-    for record in records:
+    for record in tqdm(records):
         prot_id, kingdom, label, partition = str(record.id).split('|')
         aa_seq = str(record.seq)[:len(record.seq) // 2]
         prot_info = {
             'prot_id': prot_id,
             'kingdom': kingdom,
             'label': label,
-            'smiles': get_smiles_of_prot(aa_seq)
+            "seq": aa_seq
         }
+        if include_smiles:
+            prot_info['smiles'] = get_smiles_of_prot(aa_seq)
+
         if partition in partitioned_prot.keys():
             partitioned_prot[partition].append(prot_info)
         else:
@@ -110,15 +114,15 @@ def __create_smiles_training_json(partitioned_prot, split_rate: float = 0.1):
     # partitioned_prot = self.extract_raw_dataset_by_partition(create_files=False)
     for partition, data in partitioned_prot.items():
         train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
-        with open(f"./sp_data/train_set_partition_{partition}.json", "w") as file:
+        with open(ut.abspath(f"data/sp_data/train_set_partition_{partition}.json"), "w") as file:
             json.dump(train_set, fp=file, ensure_ascii=False)
-        with open(f"./sp_data/test_set_partition_{partition}.json", "w") as file:
+        with open(ut.abspath(f"data/sp_data/test_set_partition_{partition}.json"), "w") as file:
             json.dump(test_set, fp=file, ensure_ascii=False)
 
 
 def __create_smiles_benchmark_json(partitioned_prot):
     for partition, data in partitioned_prot.items():
-        with open(f"./sp_data/benchmark_partition_{partition}.json", "w") as file:
+        with open(ut.abspath(f"data/sp_data/benchmark_partition_{partition}.json"), "w") as file:
             json.dump(data, fp=file, ensure_ascii=False)
 
 
