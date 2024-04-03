@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import torch
 from sklearn.metrics import classification_report
@@ -57,7 +56,7 @@ def train():
         val_outputs_lb = []
         val_outputs_pred = []
         model.eval()
-        for _, batch in enumerate(val_loader):
+        for _, batch in enumerate(tqdm(val_loader)):
             x, lb, kingdom = batch
             x = x.to(DEVICE)
             lb = lb.to(DEVICE)
@@ -65,8 +64,8 @@ def train():
             val_outputs_lb.extend(lb)
             val_outputs_pred.extend(pred)
 
-        all_lb = torch.argmax(torch.tensor(val_outputs_lb, device=DEVICE))
-        all_pred = torch.argmax(torch.tensor(val_outputs_pred, device=DEVICE))
+        all_lb = torch.argmax(torch.tensor(val_outputs_lb, device=DEVICE, dtype=torch.int64))
+        all_pred = torch.argmax(torch.tensor(val_outputs_pred, device=DEVICE, dtype=torch.int64))
         print(classification_report(all_lb, all_pred))
 
 
