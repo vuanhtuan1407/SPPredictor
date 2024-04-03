@@ -1,6 +1,6 @@
 {
   "vocab_size": 30,
-  "d_model": 512,
+  "d_model": 64,
   "dropout": 0.1,
   "max_len": 128,
   "nhead": 8,

@@ -74,7 +74,8 @@ class TransformerEncoder(nn.Module):
         super().__init__()
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model,
-            nhead=nhead
+            nhead=nhead,
+            batch_first=True
         )
         self.encoder = nn.TransformerEncoder(
             encoder_layer=encoder_layer,

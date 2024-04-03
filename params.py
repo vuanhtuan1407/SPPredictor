@@ -1,4 +1,8 @@
+# import os
+import platform
 from typing import Union
+
+OS_PLATFORM = platform.system()
 
 TRAIN_PATH = 'data/sp_data/train_set.fasta'
 BENCHMARK_PATH = 'data/sp_data/benchmark_set_sp5.fasta'
@@ -17,6 +21,7 @@ DATA = 'aa'
 CONF_TYPE = 'default'
 DEVICES: Union[list[int], str, int] = 'auto'
 ACCELERATOR = 'auto'
+NUM_WORKERS = 1 if OS_PLATFORM == 'Windows' else 2
 
 DEVICE = 'cpu'  # use for apply old training process
 

@@ -2,6 +2,7 @@ import argparse
 from typing import Union
 
 import lightning as L
+import torch
 import wandb
 # from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 from lightning.pytorch.loggers import WandbLogger
@@ -26,6 +27,8 @@ def parse_arguments():
 
 
 if __name__ == '__main__':
+    torch.set_float32_matmul_precision('medium')
+
     # CLI parsing arguments
     # args = parse_arguments()
     log_dir = params.KAGGLE_DIR if params.ENV == 'kaggle' else ut.abspath(params.LOG_DIR)
@@ -40,8 +43,11 @@ if __name__ == '__main__':
         accelerator=params.ACCELERATOR,
         max_epochs=params.EPOCHS,
         val_check_interval=1.0,
-        logger=logger,
-        callbacks=[model_checkpoint, early_stopping, tqdm_progress_bar]
+        # logger=logger,
+        logger=False,
+        enable_checkpointing=False,
+        callbacks=[early_stopping, tqdm_progress_bar]
+        # callbacks=[model_checkpoint, early_stopping, tqdm_progress_bar]
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)

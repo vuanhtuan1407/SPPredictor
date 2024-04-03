@@ -53,6 +53,7 @@ model_checkpoint = ModelCheckpoint(
     monitor='val_loss',
     every_n_epochs=1,
     save_on_train_epoch_end=True,
+    mode='min',
     save_top_k=1
 )
 
