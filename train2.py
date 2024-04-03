@@ -64,8 +64,8 @@ def train():
             val_outputs_lb.append(lb)
             val_outputs_pred.append(pred)
 
-        all_lb = torch.argmax(torch.tensor(val_outputs_lb, device=DEVICE), dim=1)
-        all_pred = torch.argmax(torch.tensor(val_outputs_pred, device=DEVICE), dim=1)
+        all_lb = torch.argmax(torch.cat(val_outputs_lb), dim=1)
+        all_pred = torch.argmax(torch.cat(val_outputs_pred), dim=1)
         print(classification_report(all_lb, all_pred))
 
 
