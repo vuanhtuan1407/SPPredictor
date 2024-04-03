@@ -87,7 +87,7 @@ def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: boo
             'prot_id': prot_id,
             'kingdom': kingdom,
             'label': label,
-            "seq": aa_seq
+            "aa_seq": aa_seq
         }
         if include_smiles:
             prot_info['smiles'] = get_smiles_of_prot(aa_seq)
