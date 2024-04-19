@@ -23,6 +23,7 @@ DEVICES: Union[list[int], str, int] = 'auto'
 ACCELERATOR = 'auto'
 NUM_WORKERS = 1 if OS_PLATFORM == 'Windows' else 2
 ORGANISM = 'others'
+FREEZE_PRETRAINED = False
 
 DEVICE = 'cpu'  # use for apply old training process
 

@@ -3,7 +3,7 @@ import json
 from torch import nn
 
 import params
-from model.nn_layers import InputEmbedding, LSTMEncoder, Classifier
+from models.nn_layers import InputEmbedding, LSTMEncoder, Classifier
 
 
 class LSTMClassifier(nn.Module):

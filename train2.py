@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 import utils
 from data.sp_dataset import SPDataset
-from model.sp_transformer import TransformerClassifier
+from models.sp_transformer import TransformerClassifier
 from params import DATA, BATCH_SIZE, MODEL, DEVICE, EPOCHS
 
 

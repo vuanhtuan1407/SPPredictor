@@ -21,8 +21,8 @@ def visualize():
     for kingdom in params.KINGDOM.keys():
         wrong = [0, 0, 0, 0, 0, 0]
         total = [0, 0, 0, 0, 0, 0]
-        predict = read_test_predictions(ut.abspath(f'out/{kingdom}_test_prediction_results_by_cnn.txt'))
-        true = read_test_predictions(ut.abspath(f'out/{kingdom}_true_prediction_results.txt'))
+        predict = read_test_predictions(ut.abspath(f'out/results/{kingdom}_test_prediction_results_by_cnn.txt'))
+        true = read_test_predictions(ut.abspath(f'out/results/{kingdom}_test_true_results.txt'))
         pred_lb = np.argmax(predict, axis=1)
         tmp = 0
         all_lbs = 0

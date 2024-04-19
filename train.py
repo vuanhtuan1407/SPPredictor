@@ -9,7 +9,7 @@ from lightning.pytorch.loggers import WandbLogger
 
 import params
 import utils as ut
-from callback_utils import model_checkpoint, early_stopping, tqdm_progress_bar
+from callbacks.callback_utils import model_checkpoint, early_stopping, tqdm_progress_bar
 from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
 

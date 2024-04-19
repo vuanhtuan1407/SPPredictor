@@ -1,7 +1,7 @@
 from torch import nn
 
 import params
-from model.nn_layers import InputEmbedding, StackedBiLSTMEncoder, Classifier
+from models.nn_layers import InputEmbedding, StackedBiLSTMEncoder, Classifier
 
 
 class StackedBiLSTMClassifier(nn.Module):
