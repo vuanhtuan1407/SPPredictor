@@ -43,11 +43,11 @@ if __name__ == '__main__':
         accelerator=params.ACCELERATOR,
         max_epochs=params.EPOCHS,
         val_check_interval=1.0,
-        # logger=logger,
-        logger=False,
-        enable_checkpointing=False,
-        callbacks=[early_stopping, tqdm_progress_bar]
-        # callbacks=[model_checkpoint, early_stopping, tqdm_progress_bar]
+        logger=logger,
+        # logger=False,
+        # enable_checkpointing=False,
+        # callbacks=[early_stopping, tqdm_progress_bar]
+        callbacks=[model_checkpoint, early_stopping, tqdm_progress_bar]
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)

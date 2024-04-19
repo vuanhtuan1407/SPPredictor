@@ -1,9 +1,9 @@
 import math
-from pathlib import Path
 
 import numpy as np
 
 import params
+import utils as ut
 
 
 def read_test_predictions(path):
@@ -17,11 +17,12 @@ def plot():
 
 def visualize():
     statistic = []
+    print(f'Below is only the statistic on wrong predictions:\n')
     for kingdom in params.KINGDOM.keys():
         wrong = [0, 0, 0, 0, 0, 0]
         total = [0, 0, 0, 0, 0, 0]
-        predict = read_test_predictions(str(Path(params.ROOT_DIR) / f'out/{kingdom}_test_prediction_results_by_cnn.txt'))
-        true = read_test_predictions(str(Path(params.ROOT_DIR) / f'out/{kingdom}_true_prediction_results.txt'))
+        predict = read_test_predictions(ut.abspath(f'out/{kingdom}_test_prediction_results_by_cnn.txt'))
+        true = read_test_predictions(ut.abspath(f'out/{kingdom}_true_prediction_results.txt'))
         pred_lb = np.argmax(predict, axis=1)
         tmp = 0
         all_lbs = 0

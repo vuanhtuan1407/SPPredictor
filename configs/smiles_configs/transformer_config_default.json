@@ -1,0 +1,9 @@
+{
+  "vocab_size": 43,
+  "d_model": 64,
+  "dropout": 0.1,
+  "max_len": 1024,
+  "nhead": 8,
+  "num_layers": 6,
+  "tokenizer_path": "tokenizer/tokenizer_smiles.json"
+}

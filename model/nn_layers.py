@@ -42,7 +42,7 @@ class InputEmbedding(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int = 512, dropout: float = 0.1, max_len: int = 5000):
+    def __init__(self, d_model: int = 512, dropout: float = 0.1, max_len: int = 2048):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
         position = torch.arange(0, max_len).unsqueeze(1)
@@ -108,25 +108,25 @@ class ConvolutionalEncoder(nn.Module):
             nn.Conv1d(in_channels=embedding_dim, out_channels=n_base, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
+            nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv2 = nn.Sequential(
             nn.Conv1d(in_channels=n_base, out_channels=n_base * 4, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
+            nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv3 = nn.Sequential(
             nn.Conv1d(in_channels=n_base * 4, out_channels=n_base, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
+            nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv4 = nn.Sequential(
             nn.Conv1d(in_channels=n_base, out_channels=embedding_dim, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
+            nn.MaxPool1d(kernel_size=3, stride=2)
         )
 
     def forward(self, x):

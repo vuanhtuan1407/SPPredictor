@@ -25,16 +25,19 @@ class SPDataModule(L.LightningDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit" or stage is None:
             # print(f"\nSetting up: Using {self.dtype}\n")
-            train_path = ['data/sp_data/train_set_partition_0.json', 'data/sp_data/train_set_partition_1.json']
-            val_path = ['data/sp_data/test_set_partition_0.json', 'data/sp_data/test_set_partition_1.json']
-            self.train_set = SPDataset(json_paths=ut.abspaths(train_path), dtype=params.DATA)
-            self.val_set = SPDataset(json_paths=ut.abspaths(val_path), dtype=params.DATA)
+            train_paths = [f'data/sp_data/train_set_partition_0_{params.ORGANISM}.json',
+                           f'data/sp_data/train_set_partition_1_{params.ORGANISM}.json']
+            val_paths = [f'data/sp_data/test_set_partition_0_{params.ORGANISM}.json',
+                         f'data/sp_data/test_set_partition_1_{params.ORGANISM}.json']
+            self.train_set = SPDataset(json_paths=ut.abspaths(train_paths), dtype=params.DATA)
+            self.val_set = SPDataset(json_paths=ut.abspaths(val_paths), dtype=params.DATA)
         elif stage == "test":
-            test_path = ['data/sp_data/train_set_partition_2.json', 'data/sp_data/test_set_partition_2.json']
-            self.test_set = SPDataset(json_paths=ut.abspaths(test_path), dtype=params.DATA)
+            test_paths = [f'data/sp_data/train_set_partition_2_{params.ORGANISM}.json',
+                          f'data/sp_data/test_set_partition_2_{params.ORGANISM}.json']
+            self.test_set = SPDataset(json_paths=ut.abspaths(test_paths), dtype=params.DATA)
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=False,
+        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=True,
                           num_workers=self.num_workers, persistent_workers=True, pin_memory=True)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:

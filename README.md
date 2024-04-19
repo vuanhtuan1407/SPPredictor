@@ -1,41 +1,57 @@
 # TODO
 
-## Important: re-code the training process because all the models to learn global context have low results on the test set
+1. configs
 
-## Find out why CNN is less affected by the current training process.
+- chia thành 2 dirs
+    - aa_configs
+    - smiles_configs
+- tạo một file `build_config.py` để build config (**Cân nhắc**)
 
-1. Dataset split
+2. data
 
-- Divided by partition (0, 1, 2)
-- 0 and 1 are used for training and validation
-    + 90% is used for training
-    + 10% is used for validation
-- 2 is used for testing
-- 25% of dataset is used for evaluation (**need to research that how they defined this D<sub>B</sub> set**)
-    - use some of the data for benchmarking or use `benchmark_set_sp5.fasta`
+- chia thành 2 dirs
+    - aa_data: chứa data liên quan đến amino acid
+    - sp_data: chứa data liên quan đến signal protein
+        - train_set.fasta
+        - uniprot_sprot.fasta
+        - benchmark_set_sp5.fasta
+- `data_utils.py`
+- `sp_dataset.py`
 
-2. Tokenizer
+3. lightning_module
 
-- BPE Tokenizer is used (**How to build my own tokenizer and not depend on `transformers` from `hugging face`**)
-- Dataset used for training tokenizer is UniProt100 with Amino Acid Smiles (**Is there any knowledge showing the best
-  SMILES format, or do I need to adjust on my own?**)
+- sửa lại theo template:
+    - data_module: prepare_data, split, loader
+    - module: define model, metrics, loss func,...; training/validation/testing/predict(_nếu cần thiết_) progess và một
+      số hàm phụ dùng để lưu results
 
-3. Model
+4. model
 
-- CNN
-- BiLSTM
-- Transformers
+- `nn_layers.py`
+- `sp_<model>.py`
+- tạo thêm một file `model_utils.py`: load_model, freeze_layer, unfreeze_layer, load_config (_nếu cần thiết_)
 
-4. Training
-5. Evaluation
+5. callbacks
 
-- Evaluation on different types of life groups or entire dataset?
-- In the origin paper TSignal, they evaluate each life group, with F1 score and MCC
+- đưa file `callback_utils.py` vào thư mục callbacks
 
-6. Visualization
+6. out
 
-## Moving to smiles
+- gồm 3 dirs
+    - đầu ra dự đoán của model: `results`
+    - kết quả các độ đo: `metrics`
+    - hình ảnh visualize `figure`: data, metrics, wrong predict label, training/validation loss
 
-1. find which is the best smiles annotation
-2. training tokenizer with swiss-reviewed uniprot
-3. training with CNN and transformer
+7. `visualization.py`
+
+- visualize data: (**có thể sử dụng pycharm notebook**)
+- visualize kết quả độ đo trên từng loài, từng nhãn
+- visualize kết quả sai trên từng loài, từng nhãn
+
+8. checkpoints
+
+- transformer: base - medium - heavy
+- cnn: base - medium - heavy
+- lstm/bi-lstm: base - medium - heavy
+- bert: protbert - pretrained protbert - pretrained protbert with freezing embedding layer
+- **Note: Đánh giá xem bao nhiêu tham số (dung lượng bao nhiêu) để được đánh giá là medium or heavy**

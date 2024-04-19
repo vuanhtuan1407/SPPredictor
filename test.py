@@ -1,7 +1,7 @@
 import os.path
-from pathlib import Path
 
 import lightning as L
+import torch
 
 import params
 import utils as ut
@@ -9,11 +9,14 @@ from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
 
 if __name__ == '__main__':
-    checkpoint = str(
-        Path(ut.ROOT_DIR) / f'checkpoints/{params.MODEL}_{params.DATA}_epoch={params.EPOCHS}_{params.ENV}.ckpt')
+    torch.set_float32_matmul_precision('medium')
+
+    checkpoint = ut.abspath(
+        f'checkpoints/{params.MODEL}_{params.DATA}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}.ckpt'
+    )
     if not os.path.exists(checkpoint):
         raise FileNotFoundError("Path does not exist. Check args again")
-    sp_module = SPModule.load_from_checkpoint(checkpoint=checkpoint)
+    sp_module = SPModule.load_from_checkpoint(checkpoint_path=checkpoint)
     sp_data_module = SPDataModule()
 
     trainer = L.Trainer(

@@ -1,16 +1,12 @@
 import os.path
 from pathlib import Path
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def abspath(path: str):
-    return str(Path(ROOT_DIR, path))
+    return str(Path(_ROOT_DIR, path))
 
 
 def abspaths(paths: list[str]):
     return [abspath(path) for path in paths]
-
-
-if __name__ == '__main__':
-    print(abspath('data/sp_data'))

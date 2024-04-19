@@ -11,7 +11,7 @@ from torch import optim, Tensor
 from torch.nn import CrossEntropyLoss, Softmax
 from torch.optim import Optimizer
 from torchmetrics import F1Score, MatthewsCorrCoef, AveragePrecision
-from transformers import BertConfig, BertModel
+from transformers import BertConfig, BertModel, GPT2TokenizerFast, BertTokenizer
 
 import params
 import utils as ut
@@ -35,7 +35,7 @@ class SPModule(L.LightningModule):
         self.save_hyperparameters()
         # self.fabric = Fabric()
 
-        # Load _config (Remove if unnecessary)
+        # Load config (Remove if unnecessary)
         # self.config = self.__load_model_config(model_type=model_type, config_path=config_path)
 
         # Tokenizer
@@ -43,7 +43,7 @@ class SPModule(L.LightningModule):
 
         # Load model
         self.model_type = params.MODEL
-        self.model = self.__load_model()
+        self.model = self._load_model()
 
         # Load metrics
         self.f1 = F1Score(task='multiclass', num_classes=len(params.SP_LABELS), average='micro')
@@ -59,11 +59,40 @@ class SPModule(L.LightningModule):
         self.test_outputs_pred = []
         self.test_step_outputs = {}
 
+    @property
+    def _config(self):
+        if params.MODEL == "bert_pretrained":
+            config = BertConfig().from_pretrained("Rostlab/prot_bert")
+            return config
+        elif params.MODEL == "bert":
+            with open(ut.abspath(f'configs/{params.DATA}_configs/{params.MODEL}_config_default.json')) as f:
+                data = json.load(f)
+                config = BertConfig(**data)
+                return config
+        else:
+            conf_path = ut.abspath(f'configs/{params.DATA}_configs/{params.MODEL}_config_{params.CONF_TYPE}.json')
+            if os.path.exists(conf_path):
+                with open(conf_path, 'r') as f:
+                    config = json.load(f)
+                    return config
+            else:
+                raise FileNotFoundError("Config file does not exist")
+
+    @property
+    def _tokenizer(self):
+        tokenizer_path = ut.abspath(self._config['tokenizer_path'])
+        tokenizer = GPT2TokenizerFast(tokenizer_file=tokenizer_path)
+        if tokenizer.pad_token is None:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        if params.MODEL == 'bert_pretrained':
+            tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert")
+        return tokenizer
+
     def forward(self, x):
-        return self.model(x)
+        return self._load_model()
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.model.parameters(), lr=1e-4, weight_decay=0.1)
+        optimizer = optim.Adam(self.model.parameters(), lr=1e-5, weight_decay=0.1)
         return optimizer
 
     def optimizer_zero_grad(self, epoch: int, batch_idx: int, optimizer: Optimizer):
@@ -73,25 +102,31 @@ class SPModule(L.LightningModule):
         loss.backward()
 
     def tokenize_input(self, x):
-        pass
+        encoded = self._tokenizer.batch_encode_plus(
+            x,
+            max_length=self._config['max_len'],
+            truncation=True,
+            padding='max_length'
+        )
+        return torch.tensor(encoded['input_ids'], dtype=torch.int64, device=self.device)
 
     def base_step(self, batch, batch_idx):
         x, lb, kingdom = batch
+        x = self.tokenize_input(x)
         pred = self.model(x)
         loss = self.loss_fn(pred.float(), lb.float())
         return x, lb, pred, loss, kingdom
 
     def training_step(self, batch, batch_idx):
         _, _, pred, loss, _ = self.base_step(batch, batch_idx)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True,
-                 batch_size=params.BATCH_SIZE)
+        self.log('train_loss', loss, on_epoch=True, prog_bar=True, logger=True, batch_size=params.BATCH_SIZE)
         return loss
 
     def validation_step(self, batch, batch_idx):
         _, lb, pred, loss, _ = self.base_step(batch, batch_idx)
         self.validation_step_outputs_pred.append(pred)
         self.validation_step_outputs_lb.append(lb)
-        self.log("val_loss", loss, prog_bar=True, sync_dist=True, batch_size=params.BATCH_SIZE)
+        self.log("val_loss", loss, prog_bar=True, batch_size=params.BATCH_SIZE)
         # return loss
 
     def on_validation_epoch_end(self):
@@ -170,7 +205,7 @@ class SPModule(L.LightningModule):
             all_lb = torch.argmax(self.test_step_outputs[key]['lb'], dim=1)
 
             # Print the statistic (the following function has ERROR about syntax)
-            # self.__save_results_to_txt(all_pred.detach().cpu(), all_lb.detach().cpu(), kingdom=key)
+            self._save_results_to_txt(all_pred.detach().cpu(), all_lb.detach().cpu(), kingdom=key)
 
             self.f1.update(all_pred, all_lb)
             self.mcc.update(all_pred, all_lb)
@@ -197,34 +232,31 @@ class SPModule(L.LightningModule):
             "Average Precision Score": average_precision_test
         }
 
-        self.__save_metrics_to_csv(metric_dict)
+        self._save_metrics_to_csv(metric_dict)
 
-    def __load_model(self):
-        """
-        Load model to Lightning Module
-        """
-        # TODO: combine CNN + Transformer; LSTM; ProtBert pretrained:
-        #  transformer and lstm models are overfit then the CNN + Trans also has low results and so do lstm
-        config = self.__load_model_config(params.MODEL, params.CONF_TYPE)
+    def _load_model(self):
+        # config = self.__load_model_config(params.MODEL, params.CONF_TYPE)
         if params.MODEL == 'transformer':
-            return TransformerClassifier(config)
+            return TransformerClassifier(self._config)
         elif params.MODEL == 'cnn':
-            return ConvolutionalClassifier(config)
+            return ConvolutionalClassifier(self._config)
         elif params.MODEL == 'st_bilstm':
-            return StackedBiLSTMClassifier(config)
+            return StackedBiLSTMClassifier(self._config)
         elif params.MODEL == "bert_pretrained" or params.MODEL == "bert":
-            return BertModel(config)
+            return BertModel(self._config)
         elif params.MODEL == "lstm":
-            return LSTMClassifier(config)
+            return LSTMClassifier(self._config)
         elif params.MODEL == "cnn_trans":
-            return CNNTransformerClassifier(config)
+            return CNNTransformerClassifier(self._config)
         else:
             return ValueError("Unknown model type")
 
     @staticmethod
-    def __save_results_to_txt(test_prediction_results, test_true_results, kingdom):
-        if not os.path.exists(ut.abspath("out")):
-            os.makedirs('out', exist_ok=True)
+    # TODO: adjust save path
+    def _save_results_to_txt(test_prediction_results, test_true_results, kingdom):
+        if not os.path.exists(ut.abspath(f"out")):
+            os.makedirs(f"out", exist_ok=True)
+
         softmax = Softmax()
         pred_path = f'out/{kingdom}_test_prediction_results_by_{params.MODEL}.txt'
         true_path = f'out/{kingdom}_test_true_results.txt'
@@ -233,9 +265,11 @@ class SPModule(L.LightningModule):
 
         np.savetxt(ut.abspath(pred_path), softmax(test_prediction_results), fmt="%.4f")
         np.savetxt(ut.abspath(true_path), test_true_results, fmt="%d")
+        # if not os.path.exists(ut.abspath(true_path)):
+        #     np.savetxt(ut.abspath(true_path), test_true_results, fmt="%d")
 
     @staticmethod
-    def __save_metrics_to_csv(metric_dict):
+    def _save_metrics_to_csv(metric_dict):
         version = 0
         while os.path.exists(ut.abspath(f'out/{params.MODEL}_metrics_results_{version}.csv')):
             version += 1
@@ -244,29 +278,9 @@ class SPModule(L.LightningModule):
         df.to_csv(ut.abspath(f'out/{params.MODEL}_metrics_results_{version}.csv'), index_label="No")
 
     @staticmethod
-    def __load_model_config(model, conf_type: str | None = None):
-        if model == "bert_pretrained":
-            config = BertConfig().from_pretrained("Rostlab/prot_bert")
-            return config
-        elif model == "bert":
-            with open(ut.abspath(f'configs/model_configs/{model}_config_default.json')) as f:
-                data = json.load(f)
-                config = BertConfig(**data)
-                return config
-        else:
-            conf_type = 'default' if conf_type is None else conf_type
-            conf_path = ut.abspath(f'configs/model_configs/{model}_config_{conf_type}.json')
-            if os.path.exists(conf_path):
-                with open(conf_path, 'r') as f:
-                    config = json.load(f)
-                    return config
-            else:
-                raise FileNotFoundError("Config file does not exist")
-
-    @staticmethod
-    def __unfreeze(layer):
+    def _unfreeze(layer):
         pass
 
     @staticmethod
-    def __freeze(layer):
+    def _freeze(layer):
         pass

@@ -14,10 +14,11 @@ class ConvolutionalClassifier(nn.Module):
         )
         self.conv_encoder = ConvolutionalEncoder(
             embedding_dim=config['d_model'],
-            kernel_size=config['kernel_size']
+            kernel_size=config['kernel_size'],
+            n_base=config['n_base']
         )
         self.flatten = nn.Flatten()
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=126976)
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=5120)
         # self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x):
@@ -25,6 +26,6 @@ class ConvolutionalClassifier(nn.Module):
         x = torch.transpose(x, 1, 2)
         x = self.conv_encoder(x)
         x = self.flatten(x)
-#         print(x.shape)
+        #         print(x.shape)
         x = self.classifier(x)
         return x
