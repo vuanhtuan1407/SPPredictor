@@ -1,6 +1,6 @@
 import argparse
 import os.path
-from typing import Optional, Union
+from typing import Optional
 
 import lightning as L
 import torch
@@ -8,12 +8,13 @@ import torch
 import utils as ut
 from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
+from typing_ext import union_devices
 
 
 def parse_arguments():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('--checkpoint', type=Optional[str], default=None)
-    arg_parser.add_argument('--devices', type=Union[list[int], str, int], default='auto')
+    arg_parser.add_argument('--devices', type=union_devices, default='auto')
     # accelerator can be 'cpu', 'gpu', 'tpu' or use 'auto' instead of do not want to specify
     arg_parser.add_argument('--accelerator', type=str, default='auto')
     arg_parser.add_argument('--data_type', type=str, default='aa')
