@@ -1,5 +1,4 @@
 import argparse
-from typing import Union
 
 import lightning as L
 import torch
@@ -7,21 +6,29 @@ import wandb
 # from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 from lightning.pytorch.loggers import WandbLogger
 
-import params
-import utils as ut
-from callback_utils import model_checkpoint, early_stopping, tqdm_progress_bar
+from callbacks.callback_utils import model_checkpoint, early_stopping
 from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
+from typing_ext import union_devices
+
+
+# import platform
 
 
 def parse_arguments():
     arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument('--process', type=str, default='train', choices=['train', 'test', 'full'])
     arg_parser.add_argument('--env', type=str, default='local')
-    arg_parser.add_argument('--log-dir', type=str, default='/logs')
-    arg_parser.add_argument('--devices', type=Union[list[int], str, int], default='auto')
+    arg_parser.add_argument('--log_dir', type=str, default='logs')
+    arg_parser.add_argument('--devices', type=union_devices, default='auto')
     # accelerator can be 'cpu', 'gpu', 'tpu' or use 'auto' instead of do not want to specify
     arg_parser.add_argument('--accelerator', type=str, default='auto')
+    arg_parser.add_argument('--lr', type=float, default=1e-6)
+    arg_parser.add_argument('--epochs', type=int, default=3)
+    arg_parser.add_argument('--batch_size', type=int, default=8)
+    arg_parser.add_argument('--model_type', type=str, default='cnn')
+    arg_parser.add_argument('--data_type', type=str, default='aa')
+    arg_parser.add_argument('--conf_type', type=str, default='default')
+    arg_parser.add_argument('--num_workers', type=int, default=1)
 
     return arg_parser.parse_args()
 
@@ -30,24 +37,34 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
 
     # CLI parsing arguments
-    # args = parse_arguments()
-    log_dir = params.KAGGLE_DIR if params.ENV == 'kaggle' else ut.abspath(params.LOG_DIR)
-    # logger = TensorBoardLogger(save_dir=log_dir, name='tensorboard')
-    logger = WandbLogger(save_dir=log_dir, name='wandb', project='SPPredictor')
-    logger.experiment.config["batch_size"] = params.BATCH_SIZE
+    args = parse_arguments()
+    # os_platform = platform.system()
+    # if os_platform == 'Linux':
+    #     args.num_workers = 2
+    logger = WandbLogger(save_dir=args.log_dir, name='wandb', project='SPPredictor')
+    logger.experiment.config['batch_size'] = args.batch_size
 
-    sp_module = SPModule()
-    sp_data_module = SPDataModule()
+    sp_module = SPModule(
+        model_type=args.model_type,
+        data_type=args.data_type,
+        conf_type=args.conf_type,
+        batch_size=args.batch_size,
+        lr=args.lr,
+    )
+
+    sp_data_module = SPDataModule(
+        data_type=args.data_type,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+    )
+
     trainer = L.Trainer(
-        devices=params.DEVICES,
-        accelerator=params.ACCELERATOR,
-        max_epochs=params.EPOCHS,
-        val_check_interval=1.0,
+        devices=args.devices,
+        accelerator=args.accelerator,
+        max_epochs=args.epochs,
         logger=logger,
-        # logger=False,
-        # enable_checkpointing=False,
-        # callbacks=[early_stopping, tqdm_progress_bar]
-        callbacks=[model_checkpoint, early_stopping, tqdm_progress_bar]
+        val_check_interval=1.0,
+        callbacks=[model_checkpoint, early_stopping]
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)

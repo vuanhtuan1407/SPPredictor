@@ -80,7 +80,7 @@ fabric.properties
 # Logs
 logs/*
 
-# Extracted data
+# Extracted data_type
 data/sp_data/*
 
 

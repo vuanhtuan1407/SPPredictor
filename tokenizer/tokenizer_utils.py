@@ -7,8 +7,11 @@ from tokenizers.normalizers import Sequence, NFD, StripAccents
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import BpeTrainer
+from transformers import GPT2TokenizerFast, BertTokenizer
 
-from data import data_utils as dut
+import data.data_utils as dut
+import params
+import utils as ut
 
 SAVE_PATH = './tokenizer_smiles.json'
 
@@ -26,7 +29,7 @@ def train_bpe_tokenizer():
     # Training
     if not os.path.exists(SAVE_PATH):
         print("Build tokenizer")
-        # Build tokenizer model
+        # Build tokenizer models
         tokenizer = Tokenizer(BPE(unk_token='[UNK]'))
 
         # Normalization
@@ -60,7 +63,15 @@ def train_bpe_tokenizer():
         print('Tokenizer already existed')
 
 
-if __name__ == "__main__":
+def load_tokenizer(model_type, data_type):
+    tokenizer_path = ut.abspath(f'tokenizer/tokenizer_{data_type}.json')
+    tokenizer = GPT2TokenizerFast(tokenizer_file=tokenizer_path)
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+    if model_type == 'bert_pretrained':
+        tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert")
+    return tokenizer
+
+
+if __name__ == '__main__':
     train_bpe_tokenizer()
-    # save_path = './tokenizer_smiles.json'
-    # print(os.path.exists(save_path))

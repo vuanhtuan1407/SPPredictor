@@ -2,12 +2,13 @@ import torch
 from torch import nn
 
 import params
-from model.nn_layers import InputEmbedding, ConvolutionalEncoder, Classifier
+from models.nn_layers import InputEmbedding, ConvolutionalEncoder, Classifier
 
 
 class ConvolutionalClassifier(nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.input_embedding = InputEmbedding(
             vocab_size=config['vocab_size'],
             d_model=config['d_model']
@@ -18,7 +19,7 @@ class ConvolutionalClassifier(nn.Module):
             n_base=config['n_base']
         )
         self.flatten = nn.Flatten()
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=5120)
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=1024)
         # self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x):
