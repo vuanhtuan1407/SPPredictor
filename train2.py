@@ -20,12 +20,12 @@ def train():
     # LOAD DATASET
     train_set = SPDataset(
         json_paths=utils.abspaths(
-            ['data/sp_data/train_set_partition_0.json', 'data/sp_data/train_set_partition_1.json']),
-        dtype=DATA
+            ['data_type/sp_data/train_set_partition_0.json', 'data_type/sp_data/train_set_partition_1.json']),
+        data_type=DATA
     )
     val_set = SPDataset(
-        json_paths=utils.abspaths(['data/sp_data/test_set_partition_0.json', 'data/sp_data/test_set_partition_1.json']),
-        dtype=DATA
+        json_paths=utils.abspaths(['data_type/sp_data/test_set_partition_0.json', 'data_type/sp_data/test_set_partition_1.json']),
+        data_type=DATA
     )
     train_loader = DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=False)
     val_loader = DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False)
@@ -47,7 +47,7 @@ def train():
             x, lb, kingdom = batch
             x = x.to(DEVICE)
             lb = lb.to(DEVICE)
-            # kingdom = kingdom.to(DEVICE)
+            # organism = organism.to(DEVICE)
             pred = model(x)
             loss = loss_fn(pred.float(), lb.float())
             loss.backward()

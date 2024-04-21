@@ -1,12 +1,19 @@
-# ==================================================
-# The following run script is used when your system based on Unix (Linux, MacOS, ...)
-# If training and testing perform on 2 different system, make sure params.ENV is set to training environment
-# and perform just one process at single time
+# =================================================================================================
+# --num_workers on training process need to set to more than 1 only if train not on personal laptop
 #
-# ==================================================
+# ==================================================================================================
 
 # Training and Validation
-python3 main.py
+python3 train.py \
+        --model_type "cnn" \
+        --data_type "aa" \
+        --conf_type "default" \
+        --epochs 10 \
+        --batch_size 8 \
+        --num_workers 2 \
+        --lr 1e-6
 
 # testing
-python3 test.py
+python3 test.py \
+        --checkpoint "cnn_aa_epoch=100_default_kaggle.ckpt" \
+        --batch_size 8

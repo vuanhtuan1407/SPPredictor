@@ -63,12 +63,12 @@ def train_bpe_tokenizer():
         print('Tokenizer already existed')
 
 
-def load_tokenizer(model, data):
-    tokenizer_path = ut.abspath(f'tokenizer/tokenizer_{data}.json')
+def load_tokenizer(model_type, data_type):
+    tokenizer_path = ut.abspath(f'tokenizer/tokenizer_{data_type}.json')
     tokenizer = GPT2TokenizerFast(tokenizer_file=tokenizer_path)
     if tokenizer.pad_token is None:
         tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    if model == 'bert_pretrained':
+    if model_type == 'bert_pretrained':
         tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert")
     return tokenizer
 

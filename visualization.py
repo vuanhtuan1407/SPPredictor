@@ -18,7 +18,7 @@ def plot():
 def visualize():
     statistic = []
     print(f'Below is only the statistic on wrong predictions:\n')
-    for kingdom in params.KINGDOM.keys():
+    for kingdom in params.ORGANISMS.keys():
         wrong = [0, 0, 0, 0, 0, 0]
         total = [0, 0, 0, 0, 0, 0]
         predict = read_test_predictions(ut.abspath(f'out/results/{kingdom}_test_prediction_results_by_cnn.txt'))

@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 import utils as ut
 
-AA_DATA = pd.read_csv(ut.abspath('data/aa_data/smiles_string_aa.csv'))  # Load data into DataFrame
+AA_DATA = pd.read_csv(ut.abspath('data/aa_data/smiles_string_aa.csv'))  # Load data_type into DataFrame
 UNIPROT_PATH = ut.abspath('data/sp_data/uniprot_sprot.fasta')
 SMILES_CORPUS_PATH = ut.abspath('data/sp_data/uniprot_smiles.txt')
 SIGNALP6_PATH = ut.abspath('data/sp_data/train_set.fasta')
@@ -76,8 +76,8 @@ def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: boo
 
     :param organism:
     :param include_smiles: Include smiles convert in the dataset
-    :param benchmark: Define whether raw data will be used for benchmarking or not?
-    :param raw_path: Path to raw data, defaults to `train_set.fasta`
+    :param benchmark: Define whether raw data_type will be used for benchmarking or not?
+    :param raw_path: Path to raw data_type, defaults to `train_set.fasta`
     """
     raw_path = SIGNALP6_PATH if raw_path is None else raw_path
     partitioned_prot = {}
@@ -88,7 +88,7 @@ def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: boo
         aa_seq = str(record.seq)[:len(record.seq) // 2]
         prot_info = {
             'prot_id': prot_id,
-            'kingdom': kingdom,
+            'organism': kingdom,
             'label': label,
             "aa_seq": aa_seq
         }
@@ -118,27 +118,27 @@ def _create_smiles_training_json(partitioned_prot, split_rate: float = 0.1, orga
     if organism is None:
         for partition, data in partitioned_prot.items():
             train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
-            with open(ut.abspath(f"data/sp_data/train_set_partition_{partition}.json"), "w") as file:
+            with open(ut.abspath(f"data_type/sp_data/train_set_partition_{partition}.json"), "w") as file:
                 json.dump(train_set, fp=file, ensure_ascii=False)
-            with open(ut.abspath(f"data/sp_data/test_set_partition_{partition}.json"), "w") as file:
+            with open(ut.abspath(f"data_type/sp_data/test_set_partition_{partition}.json"), "w") as file:
                 json.dump(test_set, fp=file, ensure_ascii=False)
     else:
         for partition, data in partitioned_prot.items():
             train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
-            with open(ut.abspath(f"data/sp_data/train_set_partition_{partition}_{organism}.json"), "w") as file:
+            with open(ut.abspath(f"data_type/sp_data/train_set_partition_{partition}_{organism}.json"), "w") as file:
                 json.dump(train_set, fp=file, ensure_ascii=False)
-            with open(ut.abspath(f"data/sp_data/test_set_partition_{partition}_{organism}.json"), "w") as file:
+            with open(ut.abspath(f"data_type/sp_data/test_set_partition_{partition}_{organism}.json"), "w") as file:
                 json.dump(test_set, fp=file, ensure_ascii=False)
 
 
 def _create_smiles_benchmark_json(partitioned_prot, organism: str | None = None):
     if organism is None:
         for partition, data in partitioned_prot.items():
-            with open(ut.abspath(f"data/sp_data/benchmark_partition_{partition}.json"), "w") as file:
+            with open(ut.abspath(f"data_type/sp_data/benchmark_partition_{partition}.json"), "w") as file:
                 json.dump(data, fp=file, ensure_ascii=False)
     else:
         for partition, data in partitioned_prot.items():
-            with open(ut.abspath(f"data/sp_data/benchmark_partition_{partition}_{organism}.json"), "w") as file:
+            with open(ut.abspath(f"data_type/sp_data/benchmark_partition_{partition}_{organism}.json"), "w") as file:
                 json.dump(data, fp=file, ensure_ascii=False)
 
 
@@ -155,8 +155,8 @@ def _split_dataset_by_organism(file=None):
             eukarya.append(record)
         else:
             others.append(record)
-    SeqIO.write(eukarya, ut.abspath(f"data/sp_data/eukarya_dataset.fasta"), format='fasta')
-    SeqIO.write(others, ut.abspath(f"data/sp_data/others_dataset.fasta"), format='fasta')
+    SeqIO.write(eukarya, ut.abspath(f"data_type/sp_data/eukarya_dataset.fasta"), format='fasta')
+    SeqIO.write(others, ut.abspath(f"data_type/sp_data/others_dataset.fasta"), format='fasta')
 
 
 if __name__ == "__main__":

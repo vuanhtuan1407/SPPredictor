@@ -1,5 +1,7 @@
 # TODO
 
+- sửa `kingdom` --> `organism`
+
 1. configs
 
 - chia thành 2 dirs

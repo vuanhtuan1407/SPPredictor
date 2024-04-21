@@ -22,8 +22,15 @@ import utils as ut
 
 
 class SPModule(L.LightningModule):
-    def __init__(self):
+    def __init__(self, model_type: str, data_type: str, conf_type: str, batch_size: int, lr: float):
         super().__init__()
+        # Module params
+        self.model_type = model_type
+        self.data_type = data_type
+        self.conf_type = conf_type
+        self.batch_size = batch_size
+        self.lr = lr
+
         loss_weight = torch.tensor([1, 1, 1, 1, 1, 1], dtype=torch.float)
         self.loss_fn = CrossEntropyLoss(weight=loss_weight)
         self.save_hyperparameters()
@@ -33,11 +40,10 @@ class SPModule(L.LightningModule):
         # self.config = cut.load_config()
 
         # Tokenizer
-        self.tokenizer = tut.load_tokenizer(params.MODEL, params.DATA)
+        self.tokenizer = tut.load_tokenizer(model_type=model_type, data_type=data_type)
 
         # Load models
-        self.model_type = params.MODEL
-        self.model = mut.load_model(params.MODEL, params.DATA, params.CONF_TYPE)
+        self.model = mut.load_model(model_type=model_type, data_type=data_type, conf_type=conf_type)
 
         # Load metrics
         self.f1 = F1Score(task='multiclass', num_classes=len(params.SP_LABELS), average='micro')
@@ -57,7 +63,7 @@ class SPModule(L.LightningModule):
         return self.model(x)
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.model.parameters(), lr=1e-5, weight_decay=0.1)
+        optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=0.1)
         return optimizer
 
     def optimizer_zero_grad(self, epoch: int, batch_idx: int, optimizer: Optimizer):
@@ -69,7 +75,7 @@ class SPModule(L.LightningModule):
     def tokenize_input(self, x):
         encoded = self.tokenizer.batch_encode_plus(
             x,
-            # max_length=self.model.config['max_len'],
+            # max_length=self.model_type.config['max_len'],
             truncation=True,
             padding=True
         )
@@ -85,14 +91,14 @@ class SPModule(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         _, _, pred, loss, _ = self.base_step(batch, batch_idx)
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True, logger=True, batch_size=params.BATCH_SIZE)
+        self.log('train_loss', loss, on_epoch=True, prog_bar=True, logger=True, batch_size=self.batch_size)
         return loss
 
     def validation_step(self, batch, batch_idx):
         _, lb, pred, loss, _ = self.base_step(batch, batch_idx)
         self.validation_step_outputs_pred.append(pred)
         self.validation_step_outputs_lb.append(lb)
-        self.log("val_loss", loss, prog_bar=True, batch_size=params.BATCH_SIZE)
+        self.log("val_loss", loss, prog_bar=True, batch_size=self.batch_size)
         # return loss
 
     def on_validation_epoch_end(self):
@@ -133,7 +139,7 @@ class SPModule(L.LightningModule):
         self.test_outputs_pred.extend(_pred.detach().cpu().numpy())
         self.test_outputs_lb.extend(_lb.detach().cpu().numpy())
 
-        # Update outputs for calculate metrics on each kingdom
+        # Update outputs for calculate metrics on each organism
         for i, k in enumerate(kingdom):
             if k not in self.test_step_outputs.keys():
                 self.test_step_outputs[k] = {}
@@ -159,16 +165,16 @@ class SPModule(L.LightningModule):
         #  all_lb = torch.argmax(all_lb, dim=1)
         #  all_test_outputs = {}
 
-        # Calculate metrics on each kingdom
+        # Calculate metrics on each organism
         f1_test = []
         mcc_test = []
         average_precision_test = []
-        for key, _ in params.KINGDOM.items():
-            all_pred = self.test_step_outputs[key]['pred']
-            all_lb = torch.argmax(self.test_step_outputs[key]['lb'], dim=1)
+        for org, _ in params.ORGANISMS.items():
+            all_pred = self.test_step_outputs[org]['pred']
+            all_lb = torch.argmax(self.test_step_outputs[org]['lb'], dim=1)
 
             # Print the statistic (the following function has ERROR about syntax)
-            self._save_results_to_txt(all_pred.detach().cpu(), all_lb.detach().cpu(), kingdom=key)
+            self._save_results_to_txt(all_pred.detach().cpu(), all_lb.detach().cpu(), organism=org)
 
             self.f1.update(all_pred, all_lb)
             self.mcc.update(all_pred, all_lb)
@@ -178,7 +184,7 @@ class SPModule(L.LightningModule):
             average_precision_test.append(self.average_precision.compute().item())
 
             print(
-                f'\nMetrics on test set of {key}: '
+                f'\nMetrics on test set of {org}: '
                 f'f1: {self.f1.compute()}, '
                 f'mcc: {self.mcc.compute()}, '
                 f'average_precision: {self.average_precision.compute()} \n'
@@ -189,7 +195,7 @@ class SPModule(L.LightningModule):
             self.average_precision.reset()
 
         metric_dict = {
-            "kingdom": params.KINGDOM.keys(),
+            "organism": params.ORGANISMS.keys(),
             "F1 Score": f1_test,
             "MCC Score": mcc_test,
             "Average Precision Score": average_precision_test
@@ -197,27 +203,23 @@ class SPModule(L.LightningModule):
 
         self._save_metrics_to_csv(metric_dict)
 
-    @staticmethod
-    def _save_results_to_txt(test_prediction_results, test_true_results, kingdom):
+    def _save_results_to_txt(self, test_prediction_results, test_true_results, organism):
         if not os.path.exists(ut.abspath(f"out/results")):
             os.makedirs(f"out/results", exist_ok=True)
 
         softmax = Softmax()
-        pred_path = f'out/results/{kingdom}_test_prediction_results_by_{params.MODEL}.txt'
-        true_path = f'out/results/{kingdom}_test_true_results.txt'
-
-        # print(test_prediction_results)
+        pred_path = f'out/results/{organism}_test_prediction_by_{self.model_type}.txt'
+        true_path = f'out/results/{organism}_test_true.txt'
 
         np.savetxt(ut.abspath(pred_path), softmax(test_prediction_results), fmt="%.4f")
         # np.savetxt(ut.abspath(true_path), test_true_results, fmt="%d")
         if not os.path.exists(ut.abspath(true_path)):
             np.savetxt(ut.abspath(true_path), test_true_results, fmt="%d")
 
-    @staticmethod
-    def _save_metrics_to_csv(metric_dict):
+    def _save_metrics_to_csv(self, metric_dict):
         version = 0
-        while os.path.exists(ut.abspath(f'out/metrics/{params.MODEL}_metrics_results_{version}.csv')):
+        while os.path.exists(ut.abspath(f'out/metrics/{self.model_type}_test_metrics_{version}.csv')):
             version += 1
 
         df = pd.DataFrame().from_dict(metric_dict)
-        df.to_csv(ut.abspath(f'out/metrics/{params.MODEL}_metrics_results_{version}.csv'), index_label="No")
+        df.to_csv(ut.abspath(f'out/metrics/{self.model_type}_test_metrics_{version}.csv'), index_label=False)
