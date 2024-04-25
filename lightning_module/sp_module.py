@@ -22,8 +22,17 @@ import utils as ut
 
 
 class SPModule(L.LightningModule):
-    def __init__(self, model_type: str, data_type: str, conf_type: str, batch_size: int, lr: float):
+    def __init__(
+            self,
+            model_type: str,
+            data_type: str,
+            conf_type: str = 'default',
+            batch_size: int = 8,
+            lr: float = 1e-7
+    ):
         super().__init__()
+        self.save_hyperparameters()
+
         # Module params
         self.model_type = model_type
         self.data_type = data_type
@@ -31,9 +40,8 @@ class SPModule(L.LightningModule):
         self.batch_size = batch_size
         self.lr = lr
 
-        loss_weight = torch.tensor([1, 1, 1, 1, 1, 1], dtype=torch.float)
+        loss_weight = torch.tensor([0.1, 0.3, 0.5, 0.5, 1, 1], dtype=torch.float)
         self.loss_fn = CrossEntropyLoss(weight=loss_weight)
-        self.save_hyperparameters()
         # self.fabric = Fabric()
 
         # Load config (Remove if unnecessary)

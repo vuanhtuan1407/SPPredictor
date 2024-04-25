@@ -6,6 +6,7 @@ import wandb
 # from lightning.pytorch.loggers.tensorboard import TensorBoardLogger
 from lightning.pytorch.loggers import WandbLogger
 
+import params
 from callbacks.callback_utils import model_checkpoint, early_stopping
 from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
@@ -36,32 +37,29 @@ def parse_arguments():
 if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
 
-    # CLI parsing arguments
-    args = parse_arguments()
-    # os_platform = platform.system()
-    # if os_platform == 'Linux':
-    #     args.num_workers = 2
-    logger = WandbLogger(save_dir=args.log_dir, name='wandb', project='SPPredictor')
-    logger.experiment.config['batch_size'] = args.batch_size
+    # # CLI parsing arguments
+    # args = parse_arguments()
+    logger = WandbLogger(save_dir=params.LOG_DIR, name='wandb', project='SPPredictor')
+    logger.experiment.config['batch_size'] = params.BATCH_SIZE
 
     sp_module = SPModule(
-        model_type=args.model_type,
-        data_type=args.data_type,
-        conf_type=args.conf_type,
-        batch_size=args.batch_size,
-        lr=args.lr,
+        model_type=params.MODEL_TYPE,
+        data_type=params.DATA_TYPE,
+        conf_type=params.CONF_TYPE,
+        batch_size=params.BATCH_SIZE,
+        lr=params.LEARNING_RATE,
     )
 
     sp_data_module = SPDataModule(
-        data_type=args.data_type,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
+        data_type=params.DATA_TYPE,
+        batch_size=params.BATCH_SIZE,
+        num_workers=params.NUM_WORKERS,
     )
 
     trainer = L.Trainer(
-        devices=args.devices,
-        accelerator=args.accelerator,
-        max_epochs=args.epochs,
+        devices=params.DEVICES,
+        accelerator=params.ACCELERATOR,
+        max_epochs=params.EPOCHS,
         logger=logger,
         val_check_interval=1.0,
         callbacks=[model_checkpoint, early_stopping]

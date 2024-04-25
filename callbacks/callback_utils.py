@@ -48,7 +48,7 @@ rich_progress_bar = RichProgressBar(
 
 model_checkpoint = ModelCheckpoint(
     dirpath=ut.abspath('checkpoints'),
-    filename=f"{params.MODEL}_{params.DATA}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}",
+    filename=f"{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}",
     enable_version_counter=True,
     monitor='val_loss',
     every_n_epochs=1,
