@@ -62,7 +62,7 @@ if __name__ == '__main__':
         max_epochs=params.EPOCHS,
         logger=logger,
         val_check_interval=1.0,
-        callbacks=[model_checkpoint, early_stopping]
+        callbacks=[model_checkpoint, early_stopping],
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)

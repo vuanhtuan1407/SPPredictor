@@ -36,6 +36,10 @@ if __name__ == '__main__':
     checkpoint = ut.abspath(
         f'checkpoints/{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}.ckpt'
     )
+    if checkpoint is not None:
+        checkpoint = ut.abspath(
+            f'checkpoints/{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}-v{params.CHECKPOINT_VER}.ckpt'
+        )
     if not os.path.exists(checkpoint):
         raise FileNotFoundError("Path does not exist. Check checkpoint path again")
 

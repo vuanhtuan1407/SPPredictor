@@ -9,6 +9,12 @@ import data.data_utils as dut
 import params
 import utils as ut
 
+PLOT_CONFIG = {
+    "kind": "bar",
+    "rot": 0.3,
+    "save_dir": ut.abspath('out/figures')
+}
+
 
 def _statistics_on_total(records):
     statistics_on_organisms = {}
@@ -24,9 +30,7 @@ def _statistics_on_total(records):
             statistics_on_labels[label] = 1
         else:
             statistics_on_labels[label] += 1
-    # return (pd.DataFrame.from_dict(statistics_on_organisms, orient='index'),
-    #         pd.DataFrame.from_dict(statistics_on_labels, orient='index'))
-    return statistics_on_organisms, statistics_on_labels
+    return _sort_by_organism(statistics_on_organisms), _sort_by_label(statistics_on_labels)
 
 
 def _statistics_on_train_val_test(records):
@@ -43,32 +47,37 @@ def _statistics_on_train_val_test(records):
             statistics_on_labels[label] = 1
         else:
             statistics_on_labels[label] += 1
-    return (pd.DataFrame.from_dict(statistics_on_organisms, orient='index'),
-            pd.DataFrame.from_dict(statistics_on_labels, orient='index'))
+    return _sort_by_organism(statistics_on_organisms), _sort_by_label(statistics_on_labels)
 
 
-# TODO: Viet mot class visualize
-def _plot_statistics_on_organisms(statistics_on_organisms):
-    data = pd.DataFrame(statistics_on_organisms.values(), index=statistics_on_organisms.keys())
-    return data.plot(kind='bar', legend="number of samples").get_figure().savefig('statistics_on_organisms.png')
+def _sort_by_organism(records):
+    return dict(sorted(records.items(), key=lambda kv: params.ORGANISMS[kv[0]]))
+
+
+def _sort_by_label(records):
+    return dict(sorted(records.items(), key=lambda kv: params.SP_LABELS[kv[0]]))
+
+
+def _plot_statistics(statistics: dict, title: str, filename: str = None, save: bool = True):
+    data = pd.DataFrame(
+        data={"number of samples": statistics.values()},
+        index=list(statistics.keys())
+    )
+    fig = data.plot(kind=PLOT_CONFIG['kind'], title=title, rot=PLOT_CONFIG['rot']).get_figure()
+    if filename is not None and save is True:
+        fig.savefig(PLOT_CONFIG['save_dir'] + '/' + filename)
+    else:
+        return fig
 
 
 def visualize_data():
     """Visualize how many samples each organism and how many samples each label
-    1. visualize the whole dataset
-        1.1. read `.fasta`
-        1.2. visualize on organisms
-        1.3. visualize on labels
-    2. visualize training/validation/testing set
-        2.1. read `.json`
-        2.2. visualize on organisms
-        2.3. visualize on labels
     """
-    # Part 1
+    # extract all data
     records = SeqIO.parse(dut.SIGNALP6_PATH, 'fasta')
     statistics_on_organisms, statistics_on_labels = _statistics_on_total(records)
 
-    # Part 2
+    # extract train/val/test set
     train_paths = [f'data/sp_data/train_set_partition_0.json', f'data/sp_data/train_set_partition_1.json']
     val_paths = [f'data/sp_data/test_set_partition_0.json', f'data/sp_data/test_set_partition_1.json']
     test_paths = [f'data/sp_data/train_set_partition_2.json', f'data/sp_data/test_set_partition_2.json']
@@ -85,6 +94,32 @@ def visualize_data():
     statistics_on_train_organisms, statistics_on_train_labels = _statistics_on_train_val_test(train_records)
     statistics_on_val_organisms, statistics_on_val_labels = _statistics_on_train_val_test(val_records)
     statistics_on_test_organisms, statistics_on_test_labels = _statistics_on_train_val_test(test_records)
+
+    # plot
+    _plot_statistics(statistics_on_organisms, title='Statistics on total organisms',
+                     filename='statistics_on_organisms.jpg')
+    _plot_statistics(statistics_on_labels, title='Statistics on total labels',
+                     filename='statistics_on_labels.jpg')
+
+    _plot_statistics(statistics_on_train_organisms, title='Statistics on train organisms',
+                     filename='statistics_on_train_organisms.jpg')
+    _plot_statistics(statistics_on_train_labels, title='Statistics on train labels',
+                     filename='statistics_on_train_labels.jpg')
+    _plot_statistics(statistics_on_val_organisms, title='Statistics on val organisms',
+                     filename='statistics_on_val_organisms.jpg')
+    _plot_statistics(statistics_on_val_labels, title='Statistics on val labels',
+                     filename='statistics_on_val_labels.jpg')
+    _plot_statistics(statistics_on_test_organisms, title='Statistics on test organisms',
+                     filename='statistics_on_test_organisms.jpg')
+    _plot_statistics(statistics_on_test_labels, title='Statistics on test labels',
+                     filename='statistics_on_test_labels.jpg')
+
+
+def _metrics_on_organisms(metrics):
+    """Metrics include F1, Recall, MCC, Average Precision
+    Just read from `.csv` from out/metrics and convert them to pandas DataFrame
+    """
+    pass
 
 
 def visualize_metrics():
