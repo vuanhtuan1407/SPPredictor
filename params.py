@@ -17,9 +17,9 @@ MODEL AND TRAINER CONFIGURATION
 MODEL_TYPE = 'cnn'
 DATA_TYPE = 'aa'
 CONF_TYPE = 'default'
-EPOCHS = 1
-ENV = 'local'
-CHECKPOINT_VER: int | None = 11
+EPOCHS = 50
+ENV = 'kaggle'
+CHECKPOINT_VER: int | None = None
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7

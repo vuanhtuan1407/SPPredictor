@@ -103,26 +103,29 @@ class ConvolutionalEncoder(nn.Module):
             n_base: int = 1024,
     ):
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
         self.conv1 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=embedding_dim, out_channels=n_base, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv2 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=n_base, out_channels=n_base * 4, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv3 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=n_base * 4, out_channels=n_base, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv4 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=n_base, out_channels=embedding_dim, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
@@ -134,7 +137,6 @@ class ConvolutionalEncoder(nn.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-        x = self.dropout(x)
         return x
 
 

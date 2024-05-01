@@ -36,7 +36,7 @@ if __name__ == '__main__':
     checkpoint = ut.abspath(
         f'checkpoints/{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}.ckpt'
     )
-    if checkpoint is not None:
+    if params.CHECKPOINT_VER is not None:
         checkpoint = ut.abspath(
             f'checkpoints/{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}-v{params.CHECKPOINT_VER}.ckpt'
         )
@@ -49,7 +49,8 @@ if __name__ == '__main__':
     trainer = L.Trainer(
         devices=params.DEVICES,
         accelerator=params.ACCELERATOR,
-        logger=False
+        logger=False,
+        enable_checkpointing=False
     )
 
     trainer.test(sp_module, datamodule=sp_data_module)
