@@ -1,11 +1,9 @@
-from transformers import BertModel
-
 import configs.config_utils as cut
-import params
 from models.sp_bilstm import StackedBiLSTMClassifier
 from models.sp_cnn import ConvolutionalClassifier
 from models.sp_cnn_transformer import CNNTransformerClassifier
 from models.sp_lstm import LSTMClassifier
+from models.sp_protbert import ProtBertClassifier
 from models.sp_transformer import TransformerClassifier
 
 # Define types of model_type
@@ -27,7 +25,7 @@ def load_model(model_type, data_type, conf_type):
     elif model_type == STACKED_BILSTM:
         return StackedBiLSTMClassifier(config)
     elif model_type == BERT or model_type == BERT_PRETRAINED:
-        return BertModel(config)
+        return ProtBertClassifier(config)
     elif model_type == LSTM:
         return LSTMClassifier(config)
     elif model_type == CNN_TRANSFORMER:

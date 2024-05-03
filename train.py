@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     # # CLI parsing arguments
     # args = parse_arguments()
-    logger = WandbLogger(save_dir=params.LOG_DIR, name='wandb', project='SPPredictor')
+    logger = WandbLogger(save_dir=params.LOG_DIR, name=f'{params.MODEL_TYPE}_{params.DATA_TYPE}', project='SPPredictor')
     logger.experiment.config['batch_size'] = params.BATCH_SIZE
 
     sp_module = SPModule(
@@ -60,9 +60,10 @@ if __name__ == '__main__':
         devices=params.DEVICES,
         accelerator=params.ACCELERATOR,
         max_epochs=params.EPOCHS,
-        logger=logger,
+        logger=False,
+        enable_checkpointing=False,
         val_check_interval=1.0,
-        callbacks=[model_checkpoint, early_stopping],
+        # callbacks=[model_checkpoint, early_stopping],
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)

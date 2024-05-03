@@ -4,6 +4,7 @@ import math
 import numpy as np
 import pandas as pd
 from Bio import SeqIO
+from matplotlib import pyplot as plt
 
 import data.data_utils as dut
 import params
@@ -115,6 +116,72 @@ def visualize_data():
                      filename='statistics_on_test_labels.jpg')
 
 
+def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
+    """Draws a bar plot with multiple bars per data point.
+
+    Parameters
+    ----------
+    ax : matplotlib.pyplot.axis
+        The axis we want to draw our plot on.
+
+    data: dictionary
+        A dictionary containing the data we want to plot. Keys are the names of the
+        data, the items is a list of the values.
+
+        Example:
+        data = {
+            "x":[1,2,3],
+            "y":[1,2,3],
+            "z":[1,2,3],
+        }
+
+    colors : array-like, optional
+        A list of colors which are used for the bars. If None, the colors
+        will be the standard matplotlib color cyle. (default: None)
+
+    total_width : float, optional, default: 0.8
+        The width of a bar group. 0.8 means that 80% of the x-axis is covered
+        by bars and 20% will be spaces between the bars.
+
+    single_width: float, optional, default: 1
+        The relative width of a single bar within a group. 1 means the bars
+        will touch eachother within a group, values less than 1 will make
+        these bars thinner.
+
+    legend: bool, optional, default: True
+        If this is set to true, a legend will be added to the axis.
+    """
+
+    # Check if colors where provided, otherwhise use the default color cycle
+    if colors is None:
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # Number of bars per group
+    n_bars = len(data)
+
+    # The width of a single bar
+    bar_width = total_width / n_bars
+
+    # List containing handles for the drawn bars, used for the legend
+    bars = []
+
+    # Iterate over all data
+    for i, (name, values) in enumerate(data.items()):
+        # The offset in x direction of that bar
+        x_offset = (i - n_bars / 2) * bar_width + bar_width / 2
+
+        # Draw a bar for every value of that type
+        for x, y in enumerate(values):
+            bar = ax.bar(x + x_offset, y, width=bar_width * single_width, color=colors[i % len(colors)])
+
+        # Add a handle to the last drawn bar, which we'll need for the legend
+        bars.append(bar[0])
+
+    # Draw legend if we need
+    if legend:
+        ax.legend(bars, data.keys())
+
+
 def _metrics_on_organisms(metrics):
     """Metrics include F1, Recall, MCC, Average Precision
     Just read from `.csv` from out/metrics and convert them to pandas DataFrame
@@ -125,7 +192,30 @@ def _metrics_on_organisms(metrics):
 def visualize_metrics():
     """Visualize the result of the metrics on organisms and on labels
     """
-    pass
+    models = ["cnn", "transformer"]
+
+    for k, o in params.ORGANISMS.items():
+        fig = plt.figure(figsize=(20, 6))
+        fig.suptitle(k)
+        metric_paths = [
+            ut.abspath(f'out/metrics/cnn_aa_epoch=100_default_kaggle_test_metrics_{k}.csv'),
+            ut.abspath(f'out/metrics/transformer_aa_epoch=100_default_kaggle_test_metrics_{k}.csv')
+        ]
+        df1, df2 = pd.read_csv(metric_paths[0]), pd.read_csv(metric_paths[1])
+        metrics = {
+            "f1_score": {},
+            "recall": {},
+            "mcc": {},
+            "average_precision": {}
+        }
+        for i, metric in enumerate(metrics.keys()):
+            metrics[metric]['cnn'] = df1[df1['metrics'] == metric].values[0][1:]
+            metrics[metric]['transformer'] = df2[df2['metrics'] == metric].values[0][1:]
+            ax = plt.subplot(1, 4, i + 1)
+            bar_plot(ax, metrics[metric], total_width=.8, single_width=.9)
+            plt.xticks(range(6), list(params.SP_LABELS.keys()))
+            plt.title(metric)
+        plt.show()
 
 
 def visualize_results():

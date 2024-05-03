@@ -69,8 +69,8 @@ class SPModule(L.LightningModule):
 
         self.test_outputs_lb_total = []
         self.test_outputs_pred_total = []
-        self.test_outputs_lb_organism = [[]] * len(params.SP_LABELS)
-        self.test_outputs_pred_organism = [[]] * len(params.SP_LABELS)
+        self.test_outputs_lb_organism = [[], [], [], [], [], []]
+        self.test_outputs_pred_organism = [[], [], [], [], [], []]
 
     def forward(self, x):
         return self.model(x)
@@ -158,33 +158,41 @@ class SPModule(L.LightningModule):
     def on_test_end(self) -> None:
         # TODO: Tạo một metrics dict để lưu các giá trị này lại và print (xem xét tạo một func như class_report của sklearn
 
+        softmax = Softmax()
+
         # Apply argmax on these outputs (only for label) and evaluate the metric results
         total_pred = torch.tensor(self.test_outputs_pred_total, device=self.device)
         total_lb = torch.tensor(self.test_outputs_lb_total, device=self.device)
-        print(classification_report(torch.argmax(total_pred, dim=1).tolist(), torch.argmax(total_lb, dim=1).tolist()))
+        print(classification_report(torch.argmax(total_pred, dim=1).tolist(), torch.argmax(total_lb, dim=1).tolist(),
+                                    zero_division=0))
 
         # Calculate metrics on each class (for both on total and on organisms)
         total_index = len(params.ORGANISMS)
-        f1_test = [[]] * (total_index + 1)
-        recall_test = [[]] * (total_index + 1)
-        mcc_test = [[]] * (total_index + 1)
-        average_precision_test = [[]] * (total_index + 1)
+        f1_test = [[], [], [], [], [], [], []]
+        recall_test = [[], [], [], [], [], [], []]
+        mcc_test = [[], [], [], [], [], [], []]
+        average_precision_test = [[], [], [], [], [], [], []]
         for k, o in params.ORGANISMS.items():
-            all_pred = torch.tensor(self.test_outputs_pred_organism[o], device=self.device)
+            all_pred = softmax(torch.tensor(self.test_outputs_pred_organism[o], device=self.device))
             all_lb = torch.tensor(self.test_outputs_lb_organism[o], device=self.device)
             all_lb = torch.argmax(all_lb, dim=1)
 
             # Print the statistic (the following function has ERROR about syntax)
-            self._save_results_to_txt(all_pred.detach().cpu(), all_lb.detach().cpu(), organism=k)
+            # self._save_results_to_txt(all_pred.clone().detach().cpu(), all_lb.clone().detach().cpu(), organism=k)
 
-            self.f1.update(all_pred, all_lb)
-            self.recall.update(all_pred, all_lb)
-            self.mcc.update(all_pred, all_lb)
-            self.average_precision.update(all_pred, all_lb)
-            f1_test[o] = (self.f1.compute() * 100).tolist()
-            recall_test[o] = (self.recall.compute() * 100).tolist()
-            mcc_test[o] = (self.mcc.compute() * 100).tolist()
-            average_precision_test[o] = (self.average_precision.compute() * 100).tolist()
+            # self.f1.update(all_pred, all_lb)
+            # self.recall.update(all_pred, all_lb)
+            # self.mcc.update(all_pred, all_lb)
+            # self.average_precision.update(all_pred, all_lb)
+            # f1_test[o] = (self.f1.compute() * 100).tolist()
+            # recall_test[o] = (self.recall.compute() * 100).tolist()
+            # mcc_test[o] = (self.mcc.compute() * 100).tolist()
+            # average_precision_test[o] = (self.average_precision.compute() * 100).tolist()
+
+            f1_test[o] = (self.f1(all_pred, all_lb) * 100).tolist()
+            recall_test[o] = (self.recall(all_pred, all_lb) * 100).tolist()
+            mcc_test[o] = (self.mcc(all_pred, all_lb) * 100).tolist()
+            average_precision_test[o] = (self.average_precision(all_pred, all_lb) * 100).tolist()
 
             print(
                 f'\nMetrics on test set of {k}: '
@@ -268,7 +276,7 @@ class SPModule(L.LightningModule):
             }
             df = pd.DataFrame.from_dict(metrics_organisms).transpose().round(2)
             df.to_csv(ut.abspath(f'out/metrics/{self.checkpoint_filename}_test_metrics_{k}.csv'),
-                      header=list(params.SP_LABELS.keys()), index_label='metrics')
+                      header=list(params.SP_LABELS.keys()), index_label='metrics', na_rep=str(0.0))
 
         total_index = len(params.ORGANISMS)
         metrics_total = {
@@ -279,4 +287,4 @@ class SPModule(L.LightningModule):
         }
         df = pd.DataFrame().from_dict(metrics_total).transpose().round(2)
         df.to_csv(ut.abspath(f'out/metrics/{self.checkpoint_filename}_test_metrics_TOTAL.csv'),
-                  header=list(params.SP_LABELS.keys()), index_label='metrics')
+                  header=list(params.SP_LABELS.keys()), index_label='metrics', na_rep=str(0.0))

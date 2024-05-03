@@ -15,15 +15,12 @@ class OrganismEmbedding(nn.Module):
         super().__init__()
         self.num_orgs = num_orgs
         self.embedding_dim = e_dim
-        oe = torch.zeros(num_orgs, e_dim)
-        for i in range(num_orgs):
-            oe[i, i] = 1
-        # oe = oe.unsqueeze(0)
-        # self.register_buffer('oe', oe)
-        self.oe = nn.Embedding.from_pretrained(torch.FloatTensor(oe), freeze=False)
+        torch.random.manual_seed(0)
+        oe = torch.randn(num_orgs, e_dim)
+        self.organism_embedding = nn.Embedding.from_pretrained(oe, freeze=False)
 
     def forward(self, x):
-        return self.oe(x)
+        return self.organism_embedding(x)
 
 
 class InputEmbedding(nn.Module):
@@ -229,8 +226,6 @@ class Classifier(nn.Module):
 
 
 if __name__ == "__main__":
-    x = torch.randn(params.BATCH_SIZE, 30, 512)
-    print(x.shape)
-    model = StackedBiLSTMEncoder()
-    out, h_n, c_n = model(x)
-    print(out.shape, h_n.shape, c_n.shape)
+    x = torch.tensor(2)
+    oe = OrganismEmbedding(num_orgs=4, e_dim=5)
+    print(oe(x))
