@@ -23,11 +23,11 @@ class SPDataset(Dataset):
         return len(self.smiles)
 
     def __getitem__(self, index):
-        organism = self.organisms[index]
+        organism = torch.tensor(params.ORGANISMS[self.organisms[index]])
         seq = self.aa_seq[index] if self.data_type == 'aa' else self.smiles[index]
         label = torch.zeros(len(params.SP_LABELS), dtype=torch.int64)
         label[params.SP_LABELS[self.labels[index]]] = 1
-        return seq, label, organism
+        return seq, label, organism  # return (list[int], list[int], int)
 
     @staticmethod
     def _read_jsons(json_paths: list[str]):

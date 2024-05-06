@@ -192,30 +192,32 @@ def _metrics_on_organisms(metrics):
 def visualize_metrics():
     """Visualize the result of the metrics on organisms and on labels
     """
-    models = ["cnn", "transformer"]
+    models = ["cnn", "transformer", "lstm", "st_bilstm"]
 
     for k, o in params.ORGANISMS.items():
         fig = plt.figure(figsize=(20, 6))
         fig.suptitle(k)
-        metric_paths = [
-            ut.abspath(f'out/metrics/cnn_aa_epoch=100_default_kaggle_test_metrics_{k}.csv'),
-            ut.abspath(f'out/metrics/transformer_aa_epoch=100_default_kaggle_test_metrics_{k}.csv')
-        ]
-        df1, df2 = pd.read_csv(metric_paths[0]), pd.read_csv(metric_paths[1])
         metrics = {
             "f1_score": {},
             "recall": {},
             "mcc": {},
             "average_precision": {}
         }
+        df = []
+        for model in models:
+            metric_path = ut.abspath(f'out/metrics/{model}_aa_epoch=100_default_kaggle_test_metrics_{k}.csv')
+            df.append(pd.read_csv(metric_path))
+
         for i, metric in enumerate(metrics.keys()):
-            metrics[metric]['cnn'] = df1[df1['metrics'] == metric].values[0][1:]
-            metrics[metric]['transformer'] = df2[df2['metrics'] == metric].values[0][1:]
+            for j, model in enumerate(models):
+                df = df[j]
+                metrics[metric][model] = df[df['metrics'] == metric].values[0][1:]
             ax = plt.subplot(1, 4, i + 1)
             bar_plot(ax, metrics[metric], total_width=.8, single_width=.9)
             plt.xticks(range(6), list(params.SP_LABELS.keys()))
             plt.title(metric)
-        plt.show()
+        # plt.show()
+        fig.savefig(ut.abspath(f'out/metrics/metrics_on_{k}.png'))
 
 
 def visualize_results():
@@ -260,4 +262,5 @@ def visualize():
 
 
 if __name__ == '__main__':
-    visualize_data()
+    # visualize_data()
+    visualize_metrics()

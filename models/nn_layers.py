@@ -7,11 +7,7 @@ import params
 
 
 class OrganismEmbedding(nn.Module):
-    """
-    Parameters `num_orgs` and `e_dim` must be the same
-    """
-
-    def __init__(self, num_orgs: int = 4, e_dim: int = 4):
+    def __init__(self, num_orgs: int = 4, e_dim: int = 512):
         super().__init__()
         self.num_orgs = num_orgs
         self.embedding_dim = e_dim
@@ -20,7 +16,7 @@ class OrganismEmbedding(nn.Module):
         self.organism_embedding = nn.Embedding.from_pretrained(oe, freeze=False)
 
     def forward(self, x):
-        return self.organism_embedding(x)
+        return self.organism_embedding(x).unsqueeze(1)  # upsize from (batch, model) to (batch, 1, model)
 
 
 class InputEmbedding(nn.Module):

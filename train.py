@@ -7,7 +7,6 @@ import wandb
 from lightning.pytorch.loggers import WandbLogger
 
 import params
-from callbacks.callback_utils import model_checkpoint, early_stopping
 from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
 from typing_ext import union_devices
@@ -39,13 +38,18 @@ if __name__ == '__main__':
 
     # # CLI parsing arguments
     # args = parse_arguments()
-    logger = WandbLogger(save_dir=params.LOG_DIR, name=f'{params.MODEL_TYPE}_{params.DATA_TYPE}', project='SPPredictor')
+    logger = WandbLogger(save_dir=params.LOG_DIR, project='SPPredictor')
+    if params.USE_ORGANISM:
+        logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}_use_organism'
+    else:
+        logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}'
     logger.experiment.config['batch_size'] = params.BATCH_SIZE
 
     sp_module = SPModule(
         model_type=params.MODEL_TYPE,
         data_type=params.DATA_TYPE,
         conf_type=params.CONF_TYPE,
+        use_organism=params.USE_ORGANISM,
         batch_size=params.BATCH_SIZE,
         lr=params.LEARNING_RATE,
     )

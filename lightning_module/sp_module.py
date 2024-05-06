@@ -28,6 +28,7 @@ class SPModule(L.LightningModule):
             model_type: str,
             data_type: str,
             conf_type: str = 'default',
+            use_organism: bool = False,
             batch_size: int = 8,
             lr: float = 1e-7
     ):
@@ -38,8 +39,11 @@ class SPModule(L.LightningModule):
         self.model_type = model_type
         self.data_type = data_type
         self.conf_type = conf_type
+        self.use_organism = use_organism
         self.batch_size = batch_size
         self.lr = lr
+        if model_type == 'bert' or model_type == 'bert_pretrained':
+            self.lr = 1e-5  # according to TSignal, the learning rate for BERT model is fixed to 1e-5
         self.checkpoint_filename = ''
 
         loss_weight = torch.tensor([0.1, 0.3, 0.5, 0.5, 1, 1], dtype=torch.float)
@@ -53,7 +57,12 @@ class SPModule(L.LightningModule):
         self.tokenizer = tut.load_tokenizer(model_type=model_type, data_type=data_type)
 
         # Load models
-        self.model = mut.load_model(model_type=model_type, data_type=data_type, conf_type=conf_type)
+        self.model = mut.load_model(
+            model_type=model_type,
+            data_type=data_type,
+            conf_type=conf_type,
+            use_organism=use_organism
+        )
 
         # Load metrics
         self.f1 = F1Score(task='multiclass', num_classes=len(params.SP_LABELS), average=None)
@@ -63,8 +72,8 @@ class SPModule(L.LightningModule):
         # self.metrics = MulticlassMetrics(num_classes=len(params.SP_LABELS), average=None, device=self.device)
 
         # Outputs from training process
-        self.validation_step_outputs_lb = []
-        self.validation_step_outputs_pred = []
+        self.validation_outputs_lb = []
+        self.validation_outputs_pred = []
         self.best_val_loss = 1e6
 
         self.test_outputs_lb_total = []
@@ -88,7 +97,7 @@ class SPModule(L.LightningModule):
     def tokenize_input(self, x):
         encoded = self.tokenizer.batch_encode_plus(
             x,
-            # max_length=self.model_type.config['max_len'],
+            # max_length=self.model.config['max_len'],
             truncation=True,
             padding=True
         )
@@ -98,34 +107,38 @@ class SPModule(L.LightningModule):
     def base_step(self, batch, batch_idx):
         x, lb, organism = batch
         x = self.tokenize_input(x)
-        pred = self.model(x)
+        # pred = None  # uncomment this line in case got error do not have variable `pred` defined
+        if self.use_organism:
+            pred = self.model(x, organism)
+        else:
+            pred = self.model(x)
         loss = self.loss_fn(pred.float(), lb.float())
         return x, lb, pred, loss, organism
 
     def training_step(self, batch, batch_idx):
         _, _, pred, loss, _ = self.base_step(batch, batch_idx)
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True, logger=True, batch_size=self.batch_size)
+        self.log('train_loss', loss, on_epoch=True, prog_bar=True, batch_size=self.batch_size)
         return loss
 
     def validation_step(self, batch, batch_idx):
         _, lb, pred, loss, _ = self.base_step(batch, batch_idx)
-        self.validation_step_outputs_pred.append(pred)
-        self.validation_step_outputs_lb.append(lb)
-        self.log("val_loss", loss, prog_bar=True, batch_size=self.batch_size)
+        self.validation_outputs_pred.extend(pred.tolist())
+        self.validation_outputs_lb.extend(lb.tolist())
+        self.log("val_loss", loss, on_epoch=True, prog_bar=True, batch_size=self.batch_size)
         # return loss
 
     def on_validation_epoch_end(self):
-        all_pred = torch.concat(self.validation_step_outputs_pred, dim=0)
-        all_lb = torch.concat(self.validation_step_outputs_lb, dim=0)
+        all_pred = torch.tensor(self.validation_outputs_pred, device=self.device)
+        all_lb = torch.tensor(self.validation_outputs_lb, device=self.device)
 
         val_loss = self.loss_fn(all_pred.float(), all_lb.float())
         if val_loss < self.best_val_loss:
             self.best_val_loss = val_loss
-            # self.save_to_txt(all_pred)
 
         all_lb = torch.argmax(all_lb, dim=1)
 
         self.f1.update(all_pred, all_lb)
+        self.recall.update(all_pred, all_lb)
         self.mcc.update(all_pred, all_lb)
         self.average_precision.update(all_pred, all_lb)
 
@@ -133,13 +146,15 @@ class SPModule(L.LightningModule):
             f"\nMetrics on validation set: "
             f"best_val_loss: {self.best_val_loss}, "
             f"f1: {self.f1.compute()}, "
+            f"recall: {self.recall.compute()}, "
             f"mcc: {self.mcc.compute()}, "
             f"average_precision: {self.average_precision.compute()} \n"
         )
 
-        self.validation_step_outputs_lb.clear()
-        self.validation_step_outputs_pred.clear()
+        self.validation_outputs_lb.clear()
+        self.validation_outputs_pred.clear()
         self.f1.reset()
+        self.recall.reset()
         self.mcc.reset()
         self.average_precision.reset()
 
@@ -152,8 +167,8 @@ class SPModule(L.LightningModule):
 
         # Update outputs for calculate metrics on each class (for each organism)
         for i, o in enumerate(organism):
-            self.test_outputs_pred_organism[params.ORGANISMS[o]].append(pred[i].tolist())
-            self.test_outputs_lb_organism[params.ORGANISMS[o]].append(lb[i].tolist())
+            self.test_outputs_pred_organism[o].append(pred[i].tolist())
+            self.test_outputs_lb_organism[o].append(lb[i].tolist())
 
     def on_test_end(self) -> None:
         # TODO: Tạo một metrics dict để lưu các giá trị này lại và print (xem xét tạo một func như class_report của sklearn
@@ -178,16 +193,7 @@ class SPModule(L.LightningModule):
             all_lb = torch.argmax(all_lb, dim=1)
 
             # Print the statistic (the following function has ERROR about syntax)
-            # self._save_results_to_txt(all_pred.clone().detach().cpu(), all_lb.clone().detach().cpu(), organism=k)
-
-            # self.f1.update(all_pred, all_lb)
-            # self.recall.update(all_pred, all_lb)
-            # self.mcc.update(all_pred, all_lb)
-            # self.average_precision.update(all_pred, all_lb)
-            # f1_test[o] = (self.f1.compute() * 100).tolist()
-            # recall_test[o] = (self.recall.compute() * 100).tolist()
-            # mcc_test[o] = (self.mcc.compute() * 100).tolist()
-            # average_precision_test[o] = (self.average_precision.compute() * 100).tolist()
+            self._save_results_to_txt(all_pred.clone().detach().cpu(), all_lb.clone().detach().cpu(), organism=k)
 
             f1_test[o] = (self.f1(all_pred, all_lb) * 100).tolist()
             recall_test[o] = (self.recall(all_pred, all_lb) * 100).tolist()
@@ -246,8 +252,10 @@ class SPModule(L.LightningModule):
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         self.checkpoint_filename = checkpoint['best_model_filename'].split('.')[0]
-        if params.ENV == 'kaggle':
+        if params.ENV == 'kaggle' or params.ENV == "Linux":
             self.checkpoint_filename = self.checkpoint_filename.split('/')[-1]
+        if params.CHECKPOINT_VER is not None:
+            self.checkpoint_filename = self + f'-{params.CHECKPOINT_VER}'
 
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         best_model_path = self.trainer.checkpoint_callback.__getattribute__('best_model_path')

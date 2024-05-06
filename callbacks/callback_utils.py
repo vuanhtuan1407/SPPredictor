@@ -45,9 +45,12 @@ rich_progress_bar = RichProgressBar(
     )
 )
 
+filename = f"{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}"
+if params.USE_ORGANISM:
+    filename = f"{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_USE_ORGANISM_{params.ENV}"
 model_checkpoint = ModelCheckpoint(
     dirpath=ut.abspath('checkpoints'),
-    filename=f"{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}",
+    filename=filename,
     enable_version_counter=True,
     monitor='val_loss',
     every_n_epochs=1,
@@ -60,7 +63,8 @@ model_checkpoint = ModelCheckpoint(
 early_stopping = EarlyStopping(
     monitor="val_loss",
     min_delta=0.00,
-    patience=3,
-    verbose=False,
-    mode="max"
+    patience=11,
+    verbose=True,
+    check_finite=True,
+    mode="min"
 )

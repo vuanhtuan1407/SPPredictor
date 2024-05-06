@@ -14,17 +14,18 @@ ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
 MODEL AND TRAINER CONFIGURATION
 """
 # Adjust the 5 following params to choose the checkpoint for testing
-MODEL_TYPE = 'cnn'
+MODEL_TYPE = 'st_bilstm'
 DATA_TYPE = 'aa'
 CONF_TYPE = 'default'
-EPOCHS = 1
-ENV = 'local'
+EPOCHS = 100
+ENV = 'kaggle'
+USE_ORGANISM = False
 CHECKPOINT_VER: int | None = None
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7
 NUM_WORKERS = 1 if OS_PLATFORM == 'Windows' else 2
-ORGANISM = 'others'
+# ORGANISM = 'others'  # currently do not need to use this param
 FREEZE_PRETRAINED = False
 
 DEVICES: list[int] | str | int = 'auto'
@@ -32,7 +33,7 @@ ACCELERATOR = 'auto'
 
 # CHECKPOINT: str | None = None
 
-DEVICE = 'cpu'  # use for apply old training process
+DEVICE = 'cpu'  # use when applying old training process
 
 """
 LOGGER CONFIGURATION
