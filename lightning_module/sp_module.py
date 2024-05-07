@@ -44,7 +44,7 @@ class SPModule(L.LightningModule):
         self.lr = lr
         if model_type == 'bert' or model_type == 'bert_pretrained':
             self.lr = 1e-5  # according to TSignal, the learning rate for BERT model is fixed to 1e-5
-        self.checkpoint_filename = ''
+        self.checkpoint_name = ''
 
         loss_weight = torch.tensor([0.1, 0.3, 0.5, 0.5, 1, 1], dtype=torch.float)
         self.loss_fn = CrossEntropyLoss(weight=loss_weight)
@@ -98,7 +98,7 @@ class SPModule(L.LightningModule):
         encoded = self.tokenizer.batch_encode_plus(
             x,
             # max_length=self.model.config['max_len'],
-            truncation=True,
+            # truncation=True,
             padding=True
         )
         # print(len(encoded['input_ids'][0]))
@@ -251,15 +251,7 @@ class SPModule(L.LightningModule):
         self._save_metrics_to_csv(metric_dict)
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
-        self.checkpoint_filename = checkpoint['best_model_filename'].split('.')[0]
-        if params.ENV == 'kaggle' or params.ENV == "Linux":
-            self.checkpoint_filename = self.checkpoint_filename.split('/')[-1]
-        if params.CHECKPOINT_VER is not None:
-            self.checkpoint_filename = self + f'-{params.CHECKPOINT_VER}'
-
-    def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
-        best_model_path = self.trainer.checkpoint_callback.__getattribute__('best_model_path')
-        checkpoint['best_model_filename'] = best_model_path.split('\\')[-1]
+        self.checkpoint_name = params.CHECKPOINT.split('.')[0]
 
     def _save_results_to_txt(self, test_prediction_results, test_true_results, organism):
         if not os.path.exists(ut.abspath(f"out/results")):
@@ -283,7 +275,7 @@ class SPModule(L.LightningModule):
                 "average_precision": metric_dict['average_precision'][o],
             }
             df = pd.DataFrame.from_dict(metrics_organisms).transpose().round(2)
-            df.to_csv(ut.abspath(f'out/metrics/{self.checkpoint_filename}_test_metrics_{k}.csv'),
+            df.to_csv(ut.abspath(f'out/metrics/{self.checkpoint_name}_test_{k}.csv'),
                       header=list(params.SP_LABELS.keys()), index_label='metrics', na_rep=str(0.0))
 
         total_index = len(params.ORGANISMS)
@@ -294,5 +286,5 @@ class SPModule(L.LightningModule):
             "average_precision": metric_dict['average_precision'][total_index],
         }
         df = pd.DataFrame().from_dict(metrics_total).transpose().round(2)
-        df.to_csv(ut.abspath(f'out/metrics/{self.checkpoint_filename}_test_metrics_TOTAL.csv'),
+        df.to_csv(ut.abspath(f'out/metrics/{self.checkpoint_name}_test_metrics_TOTAL.csv'),
                   header=list(params.SP_LABELS.keys()), index_label='metrics', na_rep=str(0.0))

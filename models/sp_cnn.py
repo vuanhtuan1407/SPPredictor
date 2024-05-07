@@ -57,7 +57,7 @@ class ConvolutionalOrganismClassifier(nn.Module):
         x = torch.transpose(x, 1, 2)
         x = self.conv_encoder(x)
         x = torch.transpose(x, 1, 2)
-        org = self.organism_embedding(org)
+        org = self.organism_embedding(org).unsqueeze(1)
         inp = torch.cat((x, org), dim=1)
         inp = self.flatten(inp)
         out = self.classifier(inp)

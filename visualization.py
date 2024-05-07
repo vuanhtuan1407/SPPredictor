@@ -182,18 +182,25 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
         ax.legend(bars, data.keys())
 
 
-def _metrics_on_organisms(metrics):
-    """Metrics include F1, Recall, MCC, Average Precision
-    Just read from `.csv` from out/metrics and convert them to pandas DataFrame
+def _extract_metric_filename(filename):
+    """Extract info from metric filename: model, data, used_org, organism
     """
-    pass
+    model, data, conf = filename.split('-')[0:3]
+    use_org = filename.split("-")[3].split('_')[0]
+    organism = filename.split("-")[3].split('_')[-1].split('.')[0]
+
+    return model, data, conf, use_org, organism
 
 
 def visualize_metrics():
     """Visualize the result of the metrics on organisms and on labels
     """
-    models = ["cnn", "transformer", "lstm", "st_bilstm"]
-
+    models = []
+    checkpoint_names = [
+        # choose the best model of each type for comparing
+        "cnn-aa-default-1_epochs=1"
+    ]
+    dfs = []
     for k, o in params.ORGANISMS.items():
         fig = plt.figure(figsize=(20, 6))
         fig.suptitle(k)
@@ -203,21 +210,23 @@ def visualize_metrics():
             "mcc": {},
             "average_precision": {}
         }
-        df = []
-        for model in models:
-            metric_path = ut.abspath(f'out/metrics/{model}_aa_epoch=100_default_kaggle_test_metrics_{k}.csv')
-            df.append(pd.read_csv(metric_path))
+        for checkpoint_name in checkpoint_names:
+            metric_filename = checkpoint_name + f"_test_{k}.csv"
+            model, _, _, _, _ = _extract_metric_filename(metric_filename)
+            metric_path = ut.abspath(f'out/metrics/{metric_filename}')
+            dfs.append(pd.read_csv(metric_path))
+            models.append(model)
 
         for i, metric in enumerate(metrics.keys()):
             for j, model in enumerate(models):
-                df = df[j]
+                df = dfs[j]
                 metrics[metric][model] = df[df['metrics'] == metric].values[0][1:]
             ax = plt.subplot(1, 4, i + 1)
             bar_plot(ax, metrics[metric], total_width=.8, single_width=.9)
             plt.xticks(range(6), list(params.SP_LABELS.keys()))
             plt.title(metric)
         # plt.show()
-        fig.savefig(ut.abspath(f'out/metrics/metrics_on_{k}.png'))
+        fig.savefig(ut.abspath(f'out/figures/metrics_on_{k}.png'))
 
 
 def visualize_results():

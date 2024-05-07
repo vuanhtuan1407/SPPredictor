@@ -7,6 +7,7 @@ import wandb
 from lightning.pytorch.loggers import WandbLogger
 
 import params
+from callbacks.callback_utils import model_checkpoint, early_stopping
 from lightning_module.sp_data_module import SPDataModule
 from lightning_module.sp_module import SPModule
 from typing_ext import union_devices
@@ -38,12 +39,14 @@ if __name__ == '__main__':
 
     # # CLI parsing arguments
     # args = parse_arguments()
-    logger = WandbLogger(save_dir=params.LOG_DIR, project='SPPredictor')
-    if params.USE_ORGANISM:
-        logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}_use_organism'
-    else:
-        logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}'
-    logger.experiment.config['batch_size'] = params.BATCH_SIZE
+    logger = False
+    if params.USE_LOGGER:
+        logger = WandbLogger(save_dir=params.LOG_DIR, project='SPPredictor')
+        if params.USE_ORGANISM:
+            logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}_use_organism'
+        else:
+            logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}'
+        logger.experiment.config['batch_size'] = params.BATCH_SIZE
 
     sp_module = SPModule(
         model_type=params.MODEL_TYPE,
@@ -64,12 +67,13 @@ if __name__ == '__main__':
         devices=params.DEVICES,
         accelerator=params.ACCELERATOR,
         max_epochs=params.EPOCHS,
-        logger=False,
-        enable_checkpointing=False,
+        logger=logger,
+        enable_checkpointing=params.ENABLE_CHECKPOINTING,
         val_check_interval=1.0,
-        # callbacks=[model_checkpoint, early_stopping],
+        callbacks=[model_checkpoint, early_stopping],
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)
 
-    wandb.finish(quiet=True)
+    if logger:  # turn off wandb quiet if logger is not False
+        wandb.finish(quiet=True)

@@ -16,7 +16,7 @@ class OrganismEmbedding(nn.Module):
         self.organism_embedding = nn.Embedding.from_pretrained(oe, freeze=False)
 
     def forward(self, x):
-        return self.organism_embedding(x).unsqueeze(1)  # upsize from (batch, model) to (batch, 1, model)
+        return self.organism_embedding(x)  # upsize from (batch, model) to (batch, 1, model)
 
 
 class InputEmbedding(nn.Module):

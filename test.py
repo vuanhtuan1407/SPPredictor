@@ -33,13 +33,7 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
 
     # args = parse_arguments()
-    checkpoint = ut.abspath(
-        f'checkpoints/{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}.ckpt'
-    )
-    if params.CHECKPOINT_VER is not None:
-        checkpoint = ut.abspath(
-            f'checkpoints/{params.MODEL_TYPE}_{params.DATA_TYPE}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}-v{params.CHECKPOINT_VER}.ckpt'
-        )
+    checkpoint = ut.abspath(f'checkpoints/{params.CHECKPOINT}')
     if not os.path.exists(checkpoint):
         raise FileNotFoundError("Path does not exist. Check checkpoint path again")
 

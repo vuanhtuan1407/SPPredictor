@@ -1,0 +1,7 @@
+{
+  "vocab_size": 30,
+  "d_model": 512,
+  "kernel_size": 3,
+  "max_len": 128,
+  "n_base": 256
+}

@@ -13,14 +13,16 @@ ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
 """
 MODEL AND TRAINER CONFIGURATION
 """
-# Adjust the 5 following params to choose the checkpoint for testing
-MODEL_TYPE = 'st_bilstm'
+# Training
+MODEL_TYPE = "cnn"
 DATA_TYPE = 'aa'
 CONF_TYPE = 'default'
-EPOCHS = 100
-ENV = 'kaggle'
-USE_ORGANISM = False
-CHECKPOINT_VER: int | None = None
+EPOCHS = 1
+# ENV = 'kaggle'
+USE_ORGANISM = True
+
+# Testing
+CHECKPOINT: str = "cnn-aa-default-1_epochs=1.ckpt"
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7
@@ -31,12 +33,12 @@ FREEZE_PRETRAINED = False
 DEVICES: list[int] | str | int = 'auto'
 ACCELERATOR = 'auto'
 
-# CHECKPOINT: str | None = None
+ENABLE_CHECKPOINTING = True
 
-DEVICE = 'cpu'  # use when applying old training process
+# DEVICE = 'cpu'  # use when applying old training process
 
 """
 LOGGER CONFIGURATION
 """
-KAGGLE_DIR = '/kaggle/working'
+USE_LOGGER = False
 LOG_DIR = 'logs'  # relative path
