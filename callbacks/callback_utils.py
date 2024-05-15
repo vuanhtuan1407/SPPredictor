@@ -1,5 +1,4 @@
 import sys
-from pathlib import Path
 
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 from lightning.pytorch.callbacks import RichProgressBar, TQDMProgressBar
@@ -46,21 +45,25 @@ rich_progress_bar = RichProgressBar(
     )
 )
 
+filename = f'{params.MODEL_TYPE}-{params.DATA_TYPE}-{params.CONF_TYPE}-{int(params.USE_ORGANISM)}_epochs={params.EPOCHS}'
 model_checkpoint = ModelCheckpoint(
     dirpath=ut.abspath('checkpoints'),
-    filename=f"{params.MODEL}_{params.DATA}_epoch={params.EPOCHS}_{params.CONF_TYPE}_{params.ENV}",
+    filename=filename,
     enable_version_counter=True,
     monitor='val_loss',
     every_n_epochs=1,
     save_on_train_epoch_end=True,
     mode='min',
-    save_top_k=1
-)
+    save_top_k=1,
+    save_weights_only=True,
+)  # return location: ~/checkpoints/<model>-<data>-<conf>-<used_org>_epochs=<epochs>[_v<ver>].ckpt
+model_checkpoint.CHECKPOINT_JOIN_CHAR = '_'
 
 early_stopping = EarlyStopping(
     monitor="val_loss",
     min_delta=0.00,
-    patience=3,
-    verbose=False,
-    mode="max"
+    patience=11,
+    verbose=True,
+    check_finite=True,
+    mode="min"
 )

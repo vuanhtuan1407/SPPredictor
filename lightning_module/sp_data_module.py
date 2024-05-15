@@ -10,8 +10,10 @@ from data.sp_dataset import SPDataset
 
 
 class SPDataModule(L.LightningDataModule):
-    def __init__(self, data_type: str, batch_size: int, num_workers: int):
+    def __init__(self, data_type: str, batch_size: int = 8, num_workers: int = 1):
         super().__init__()
+        self.save_hyperparameters()
+
         self.test_set = None
         self.val_set = None
         self.train_set = None
@@ -27,10 +29,10 @@ class SPDataModule(L.LightningDataModule):
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit" or stage is None:
             # print(f"\nSetting up: Using {self.data_type}\n")
-            # train_paths = [f'data/sp_data/train_set_partition_0_{params.ORGANISM}.json',
-            #                f'data/sp_data/train_set_partition_1_{params.ORGANISM}.json']
-            # val_paths = [f'data/sp_data/test_set_partition_0_{params.ORGANISM}.json',
-            #              f'data/sp_data/test_set_partition_1_{params.ORGANISM}.json']
+            # train_paths = [f'data_type/sp_data/train_set_partition_0_{params.ORGANISM}.json',
+            #                f'data_type/sp_data/train_set_partition_1_{params.ORGANISM}.json']
+            # val_paths = [f'data_type/sp_data/test_set_partition_0_{params.ORGANISM}.json',
+            #              f'data_type/sp_data/test_set_partition_1_{params.ORGANISM}.json']
             train_paths = [f'data/sp_data/train_set_partition_0.json', f'data/sp_data/train_set_partition_1.json']
             val_paths = [f'data/sp_data/test_set_partition_0.json', f'data/sp_data/test_set_partition_1.json']
             self.train_set = SPDataset(json_paths=ut.abspaths(train_paths), data_type=self.data_type)

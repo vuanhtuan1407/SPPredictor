@@ -1,6 +1,5 @@
 # import os
 import platform
-from typing import Union
 
 OS_PLATFORM = platform.system()
 
@@ -10,25 +9,36 @@ BENCHMARK_PATH = 'data/sp_data/benchmark_set_sp5.fasta'
 SP_LABELS = dict(NO_SP=0, SP=1, LIPO=2, TAT=3, PILIN=4, TATLIPO=5)
 ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
 # ORGANISMS = dict(POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
+
 """
-MODEL AND TRAINING CONFIGURATION
+MODEL AND TRAINER CONFIGURATION
 """
-ENV = 'local'
-EPOCHS = 3 if OS_PLATFORM == 'Windows' else 10
-BATCH_SIZE = 8
-MODEL = 'cnn'
-DATA = 'aa'
+# Training
+MODEL_TYPE = "cnn"
+DATA_TYPE = 'aa'
 CONF_TYPE = 'default'
-DEVICES: Union[list[int], str, int] = 'auto'
-ACCELERATOR = 'auto'
-NUM_WORKERS = 1 if OS_PLATFORM == 'Windows' else 2
-ORGANISM = 'others'
+EPOCHS = 1
+# ENV = 'kaggle'
+USE_ORGANISM = True
+
+# Testing
+CHECKPOINT: str = "transformer-aa-lite-1_epochs=100.ckpt"
+
+BATCH_SIZE = 8
+LEARNING_RATE = 1e-7
+NUM_WORKERS = 1  # set to 1 because of some random_seeding reason
+# ORGANISM = 'others'  # currently do not need to use this param
 FREEZE_PRETRAINED = False
 
-DEVICE = 'cpu'  # use for apply old training process
+DEVICES: list[int] | str | int = 'auto'
+ACCELERATOR = 'auto'
+
+ENABLE_CHECKPOINTING = True
+
+# DEVICE = 'cpu'  # use when applying old training process
 
 """
 LOGGER CONFIGURATION
 """
-KAGGLE_DIR = '/kaggle/working'
-LOG_DIR = 'logs'
+USE_LOGGER = False
+LOG_DIR = 'logs'  # relative path

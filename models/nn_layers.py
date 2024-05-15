@@ -7,23 +7,16 @@ import params
 
 
 class OrganismEmbedding(nn.Module):
-    """
-    Parameters `num_orgs` and `e_dim` must be the same
-    """
-
-    def __init__(self, num_orgs: int = 4, e_dim: int = 4):
+    def __init__(self, num_orgs: int = 4, e_dim: int = 512):
         super().__init__()
         self.num_orgs = num_orgs
         self.embedding_dim = e_dim
-        oe = torch.zeros(num_orgs, e_dim)
-        for i in range(num_orgs):
-            oe[i, i] = 1
-        # oe = oe.unsqueeze(0)
-        # self.register_buffer('oe', oe)
-        self.oe = nn.Embedding.from_pretrained(torch.FloatTensor(oe), freeze=False)
+        torch.random.manual_seed(0)
+        oe = torch.randn(num_orgs, e_dim)
+        self.organism_embedding = nn.Embedding.from_pretrained(oe, freeze=False)
 
     def forward(self, x):
-        return self.oe(x)
+        return self.organism_embedding(x)  # upsize from (batch, model) to (batch, 1, model)
 
 
 class InputEmbedding(nn.Module):
@@ -103,26 +96,29 @@ class ConvolutionalEncoder(nn.Module):
             n_base: int = 1024,
     ):
         super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
         self.conv1 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=embedding_dim, out_channels=n_base, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv2 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=n_base, out_channels=n_base * 4, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv3 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=n_base * 4, out_channels=n_base, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=3, stride=2)
         )
         self.conv4 = nn.Sequential(
+            nn.Dropout(p=dropout),
             nn.Conv1d(in_channels=n_base, out_channels=embedding_dim, kernel_size=kernel_size, stride=stride,
                       padding=padding),
             nn.ReLU(),
@@ -134,7 +130,6 @@ class ConvolutionalEncoder(nn.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-        x = self.dropout(x)
         return x
 
 
@@ -227,8 +222,6 @@ class Classifier(nn.Module):
 
 
 if __name__ == "__main__":
-    x = torch.randn(params.BATCH_SIZE, 30, 512)
-    print(x.shape)
-    model = StackedBiLSTMEncoder()
-    out, h_n, c_n = model(x)
-    print(out.shape, h_n.shape, c_n.shape)
+    x = torch.tensor(2)
+    oe = OrganismEmbedding(num_orgs=4, e_dim=5)
+    print(oe(x))
