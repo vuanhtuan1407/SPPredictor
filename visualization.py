@@ -20,8 +20,10 @@ PLOT_CONFIG = {
 def _statistics_on_total(records):
     statistics_on_organisms = {}
     statistics_on_labels = {}
+    statistics_on_labels_organism = {}
+
     for record in records:
-        prot_id, organism, label, partition = str(record.id).split('|')
+        _, organism, label, _ = str(record.id).split('|')
         if organism not in statistics_on_organisms.keys():
             statistics_on_organisms[organism] = 1
         else:
@@ -31,12 +33,28 @@ def _statistics_on_total(records):
             statistics_on_labels[label] = 1
         else:
             statistics_on_labels[label] += 1
-    return _sort_by_organism(statistics_on_organisms), _sort_by_label(statistics_on_labels)
+
+        if organism not in statistics_on_labels_organism.keys():
+            statistics_on_labels_organism[organism] = {}
+            statistics_on_labels_organism[organism][label] = 1
+        else:
+            if label not in statistics_on_labels_organism[organism].keys():
+                statistics_on_labels_organism[organism][label] = 1
+            else:
+                statistics_on_labels_organism[organism][label] += 1
+
+    for o, lb in statistics_on_labels_organism.items():
+        statistics_on_labels_organism[o] = _sort_by_label(statistics_on_labels_organism[o])
+
+    return _sort_by_organism(statistics_on_organisms), _sort_by_label(statistics_on_labels), _sort_by_organism(
+        statistics_on_labels_organism)
 
 
 def _statistics_on_train_val_test(records):
     statistics_on_organisms = {}
     statistics_on_labels = {}
+    statistics_on_labels_organism = {}
+
     for record in records:
         organism, label = record['kingdom'], record['label']
         if organism not in statistics_on_organisms.keys():
@@ -48,7 +66,22 @@ def _statistics_on_train_val_test(records):
             statistics_on_labels[label] = 1
         else:
             statistics_on_labels[label] += 1
-    return _sort_by_organism(statistics_on_organisms), _sort_by_label(statistics_on_labels)
+
+    for record in records:
+        organism, label = record['kingdom'], record['label']
+        if organism not in statistics_on_labels_organism.keys():
+            statistics_on_labels_organism[organism] = {}
+            statistics_on_labels_organism[organism][label] = 1
+        else:
+            if label not in statistics_on_labels_organism[organism].keys():
+                statistics_on_labels_organism[organism][label] = 1
+            else:
+                statistics_on_labels_organism[organism][label] += 1
+    for o, lb in statistics_on_labels_organism.items():
+        statistics_on_labels_organism[o] = _sort_by_label(statistics_on_labels_organism[o])
+
+    return _sort_by_organism(statistics_on_organisms), _sort_by_label(statistics_on_labels), _sort_by_organism(
+        statistics_on_labels_organism)
 
 
 def _sort_by_organism(records):
@@ -66,7 +99,9 @@ def _plot_statistics(statistics: dict, title: str, filename: str = None, save: b
     )
     fig = data.plot(kind=PLOT_CONFIG['kind'], title=title, rot=PLOT_CONFIG['rot']).get_figure()
     if filename is not None and save is True:
+        data.transpose().to_csv(ut.abspath(f'out/metrics/{filename.split(".")[0]}.csv'), index_label='labels')
         fig.savefig(PLOT_CONFIG['save_dir'] + '/' + filename)
+        plt.close(fig)
     else:
         return fig
 
@@ -76,7 +111,7 @@ def visualize_data():
     """
     # extract all data
     records = SeqIO.parse(dut.SIGNALP6_PATH, 'fasta')
-    statistics_on_organisms, statistics_on_labels = _statistics_on_total(records)
+    statistics_on_organisms, statistics_on_labels, statistics_on_labels_organism = _statistics_on_total(records)
 
     # extract train/val/test set
     train_paths = [f'data/sp_data/train_set_partition_0.json', f'data/sp_data/train_set_partition_1.json']
@@ -92,9 +127,12 @@ def visualize_data():
         with open(test_path, 'r') as f:
             test_records.extend(json.load(f))
 
-    statistics_on_train_organisms, statistics_on_train_labels = _statistics_on_train_val_test(train_records)
-    statistics_on_val_organisms, statistics_on_val_labels = _statistics_on_train_val_test(val_records)
-    statistics_on_test_organisms, statistics_on_test_labels = _statistics_on_train_val_test(test_records)
+    statistics_on_train_organisms, statistics_on_train_labels, statistics_on_train_labels_organism = _statistics_on_train_val_test(
+        train_records)
+    statistics_on_val_organisms, statistics_on_val_labels, statistics_on_val_labels_organism = _statistics_on_train_val_test(
+        val_records)
+    statistics_on_test_organisms, statistics_on_test_labels, statistics_on_test_labels_organism = _statistics_on_train_val_test(
+        test_records)
 
     # plot
     _plot_statistics(statistics_on_organisms, title='Statistics on total organisms',
@@ -114,6 +152,17 @@ def visualize_data():
                      filename='statistics_on_test_organisms.jpg')
     _plot_statistics(statistics_on_test_labels, title='Statistics on test labels',
                      filename='statistics_on_test_labels.jpg')
+
+    for k in params.ORGANISMS.keys():
+        _plot_statistics(statistics_on_labels_organism[k], title=f'Statistics on total labels {k}',
+                         filename=f'statistics_on_labels_{k}.jpg')
+
+        _plot_statistics(statistics_on_train_labels_organism[k], title=f'Statistics on train labels {k}',
+                         filename=f'statistics_on_train_labels_{k}.jpg')
+        _plot_statistics(statistics_on_val_labels_organism[k], title=f'Statistics on val labels {k}',
+                         filename=f'statistics_on_val_labels_{k}.jpg')
+        _plot_statistics(statistics_on_test_labels_organism[k], title=f'Statistics on test labels {k}',
+                         filename=f'statistics_on_test_labels_{k}.jpg')
 
 
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
@@ -186,47 +235,76 @@ def _extract_metric_filename(filename):
     """Extract info from metric filename: model, data, used_org, organism
     """
     model, data, conf = filename.split('-')[0:3]
-    use_org = filename.split("-")[3].split('_')[0]
+    use_org = int(filename.split("-")[3].split('_')[0])
     organism = filename.split("-")[3].split('_')[-1].split('.')[0]
 
     return model, data, conf, use_org, organism
 
 
-def visualize_metrics():
+def visualize_metrics(checkpoint_names: list[str]):
     """Visualize the result of the metrics on organisms and on labels
     """
-    models = []
-    checkpoint_names = [
-        # choose the best model of each type for comparing
-        "cnn-aa-default-1_epochs=1"
-    ]
+    legends = []
+    checkpoint_names = checkpoint_names
     dfs = []
     for k, o in params.ORGANISMS.items():
-        fig = plt.figure(figsize=(20, 6))
+        fig = plt.figure(figsize=(7, 6))
         fig.suptitle(k)
         metrics = {
-            "f1_score": {},
-            "recall": {},
-            "mcc": {},
+            # "f1_score": {},
+            # "recall": {},
+            # "mcc": {},
             "average_precision": {}
         }
         for checkpoint_name in checkpoint_names:
             metric_filename = checkpoint_name + f"_test_{k}.csv"
-            model, _, _, _, _ = _extract_metric_filename(metric_filename)
+            model, data, _, used_org, _ = _extract_metric_filename(metric_filename)
             metric_path = ut.abspath(f'out/metrics/{metric_filename}')
             dfs.append(pd.read_csv(metric_path))
-            models.append(model)
+            if used_org:
+                legends.append(f"{model}, use org, {data}")
+            else:
+                legends.append(f"{model}, no org, {data}")
 
         for i, metric in enumerate(metrics.keys()):
-            for j, model in enumerate(models):
+            for j, model in enumerate(legends):
                 df = dfs[j]
                 metrics[metric][model] = df[df['metrics'] == metric].values[0][1:]
-            ax = plt.subplot(1, 4, i + 1)
-            bar_plot(ax, metrics[metric], total_width=.8, single_width=.9)
+            ax = plt.subplot(1, 1, i + 1)
+            bar_plot(ax, metrics[metric], total_width=0.8, single_width=0.9)
             plt.xticks(range(6), list(params.SP_LABELS.keys()))
             plt.title(metric)
         # plt.show()
         fig.savefig(ut.abspath(f'out/figures/metrics_on_{k}.png'))
+
+    fig = plt.figure(figsize=(7, 6))
+    fig.suptitle("TOTAL")
+    metrics = {
+        # "f1_score": {},
+        # "recall": {},
+        # "mcc": {},
+        "average_precision": {}
+    }
+    for checkpoint_name in checkpoint_names:
+        metric_filename = checkpoint_name + f"_test_metrics_TOTAL.csv"
+        model, data, _, used_org, _ = _extract_metric_filename(metric_filename)
+        metric_path = ut.abspath(f'out/metrics/{metric_filename}')
+        dfs.append(pd.read_csv(metric_path))
+        if used_org:
+            legends.append(f"{model}, use org, {data}")
+        else:
+            legends.append(f"{model}, no org, {data}")
+
+    for i, metric in enumerate(metrics.keys()):
+        for j, model in enumerate(legends):
+            df = dfs[j]
+            metrics[metric][model] = df[df['metrics'] == metric].values[0][1:]
+        ax = plt.subplot(1, 1, i + 1)
+        bar_plot(ax, metrics[metric], total_width=0.5, single_width=1.2)
+        plt.xticks(range(6), list(params.SP_LABELS.keys()))
+        plt.title(metric)
+    # plt.show()
+    fig.savefig(ut.abspath(f'out/figures/metrics_on_TOTAL.png'))
 
 
 def visualize_results():
@@ -272,4 +350,9 @@ def visualize():
 
 if __name__ == '__main__':
     # visualize_data()
-    visualize_metrics()
+    visualize_metrics([
+        "cnn-aa-default-0_epochs=100",
+        "transformer-aa-lite-1_epochs=100",
+        "lstm-aa-lite-1_epochs=100",
+        "st_bilstm-aa-lite-1_epochs=100"
+    ])

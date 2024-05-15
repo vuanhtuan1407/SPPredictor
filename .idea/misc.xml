@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="HSGProtein" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="HSGProtein" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="dslab" project-jdk-type="Python SDK" />
 </project>

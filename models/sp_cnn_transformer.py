@@ -67,7 +67,7 @@ class CNNTransformerOrganismClassifier(nn.Module):
             num_layers=config['num_layers']
         )
         self.classifier = Classifier(
-            d_model=config['d_model'],
+            d_model=config['d_model'] * 2,
             num_class=len(params.SP_LABELS)
         )
         self.organism_embedding = OrganismEmbedding(

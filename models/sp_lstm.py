@@ -46,7 +46,7 @@ class LSTMOrganismClassifier(nn.Module):
 
         )
         self.organism_embedding = OrganismEmbedding(num_orgs=len(params.ORGANISMS), e_dim=config['hidden_size'])
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=config['hidden_size'])
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=config['hidden_size'] * 2)
 
     def forward(self, x, org):
         x = self.input_embedding(x)

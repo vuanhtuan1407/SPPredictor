@@ -22,11 +22,11 @@ EPOCHS = 1
 USE_ORGANISM = True
 
 # Testing
-CHECKPOINT: str = "cnn-aa-default-1_epochs=1.ckpt"
+CHECKPOINT: str = "transformer-aa-lite-1_epochs=100.ckpt"
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7
-NUM_WORKERS = 1 if OS_PLATFORM == 'Windows' else 2
+NUM_WORKERS = 1  # set to 1 because of some random_seeding reason
 # ORGANISM = 'others'  # currently do not need to use this param
 FREEZE_PRETRAINED = False
 

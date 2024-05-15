@@ -51,7 +51,7 @@ cmake-build-*/
 *.iws
 
 # IntelliJ
-out/
+#out/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
@@ -92,3 +92,8 @@ checkpoints/*
 
 # zip files
 *.zip
+
+# output files
+out/figures/*
+out/metrics/*
+out/results/*

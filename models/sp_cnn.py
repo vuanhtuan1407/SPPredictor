@@ -26,7 +26,6 @@ class ConvolutionalClassifier(nn.Module):
         x = self.input_embedding(x)
         x = torch.transpose(x, 1, 2)
         x = self.conv_encoder(x)
-        print(x.shape)
         x = self.flatten(x)
         x = self.classifier(x)
         return x
