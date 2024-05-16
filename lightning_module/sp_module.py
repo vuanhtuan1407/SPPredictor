@@ -97,7 +97,7 @@ class SPModule(L.LightningModule):
     def tokenize_input(self, x):
         encoded = self.tokenizer.batch_encode_plus(
             x,
-            max_length=self.model.config['max_len'],
+            max_length=self.model.config.max_position_embeddings,
             truncation=True,
             padding='max_length'
         )

@@ -14,15 +14,15 @@ ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
 MODEL AND TRAINER CONFIGURATION
 """
 # Training
-MODEL_TYPE = "cnn"
-DATA_TYPE = 'smiles'
+MODEL_TYPE = "bert_pretrained"
+DATA_TYPE = 'aa'
 CONF_TYPE = 'default'
 EPOCHS = 100
 # ENV = 'kaggle'
-USE_ORGANISM = False
+USE_ORGANISM = True
 
 # Testing
-CHECKPOINT: str = "cnn-aa-lite-0_epochs=1.ckpt"
+CHECKPOINT: str = "bert_pretrained-aa-default-1_epochs=100.ckpt"
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7
@@ -40,5 +40,5 @@ ENABLE_CHECKPOINTING = True
 """
 LOGGER CONFIGURATION
 """
-USE_LOGGER = True
+USE_LOGGER = False
 LOG_DIR = 'logs'  # relative path

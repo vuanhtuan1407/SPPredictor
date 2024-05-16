@@ -29,6 +29,10 @@ def parse_arguments():
     return arg_parser.parse_args()
 
 
+def map_location(storage, location):
+    return storage
+
+
 if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
 
@@ -37,8 +41,8 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoint):
         raise FileNotFoundError("Path does not exist. Check checkpoint path again")
 
-    sp_module = SPModule.load_from_checkpoint(checkpoint_path=checkpoint)
-    sp_data_module = SPDataModule.load_from_checkpoint(checkpoint_path=checkpoint)
+    sp_module = SPModule.load_from_checkpoint(checkpoint_path=checkpoint, map_location=map_location)
+    sp_data_module = SPDataModule.load_from_checkpoint(checkpoint_path=checkpoint, map_location=map_location)
 
     trainer = L.Trainer(
         devices=params.DEVICES,
@@ -46,5 +50,6 @@ if __name__ == '__main__':
         logger=False,
         enable_checkpointing=False
     )
+
 
     trainer.test(sp_module, datamodule=sp_data_module)
