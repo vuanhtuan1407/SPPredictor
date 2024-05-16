@@ -51,5 +51,4 @@ if __name__ == '__main__':
         enable_checkpointing=False
     )
 
-
     trainer.test(sp_module, datamodule=sp_data_module)
