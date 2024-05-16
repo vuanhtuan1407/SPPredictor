@@ -1,12 +1,11 @@
 from typing import Optional, Dict, Any
 
 import lightning as L
-import torch
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-from torch.utils.data import DataLoader
 
 import params
 import utils as ut
+from data.data_utils import SPDataLoader
 from data.sp_dataset import SPDataset
 
 
@@ -27,16 +26,9 @@ class SPDataModule(L.LightningDataModule):
         if num_workers > 0:
             self.persistent_workers = True
 
-        # random seed to fix idx in loader
-
     # def prepare_data(self) -> None:
     #     dut.extract_raw_dataset_by_partition(raw_path=ut.abspath(params.TRAIN_PATH))
     #     dut.extract_raw_dataset_by_partition(raw_path=ut.abspath(params.BENCHMARK_PATH), benchmark=True)
-
-    def worker_init_fn(self, worker_id):
-        # seed = worker_id + self.trainer.current_epoch
-        seed = worker_id
-        torch.manual_seed(seed)
 
     def state_dict(self) -> Dict[str, Any]:
         state_dict = {
@@ -66,16 +58,17 @@ class SPDataModule(L.LightningDataModule):
             self.test_set = SPDataset(json_paths=ut.abspaths(test_paths), data_type=self.data_type)
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return DataLoader(self.train_set, batch_size=self.batch_size, shuffle=True,
-                          num_workers=self.num_workers, persistent_workers=self.persistent_workers, pin_memory=True,
-                          worker_init_fn=self.worker_init_fn)
+        return SPDataLoader(self.train_set, current_epoch=self.trainer.current_epoch, shuffle=True,
+                            use_workers_init_fn=True, batch_size=self.batch_size, num_workers=self.num_workers,
+                            pin_memory=True)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return DataLoader(self.val_set, batch_size=self.batch_size, shuffle=False,
-                          num_workers=self.num_workers, persistent_workers=self.persistent_workers, pin_memory=True)
+        return SPDataLoader(self.val_set, current_epoch=self.trainer.current_epoch, shuffle=False,
+                            use_workers_init_fn=True, batch_size=self.batch_size, num_workers=self.num_workers,
+                            pin_memory=True)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
-        return DataLoader(self.test_set, batch_size=self.batch_size, shuffle=False)
+        return SPDataLoader(self.test_set, batch_size=self.batch_size, shuffle=False, use_workers_init_fn=False)
 
 
 if __name__ == "__main__":

@@ -3,9 +3,10 @@ import random
 import time
 
 import pandas as pd
-import torch.utils.data
+import torch
 from Bio import SeqIO
 from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 import utils as ut
@@ -160,11 +161,38 @@ def _split_dataset_by_organism(file=None):
     SeqIO.write(others, ut.abspath(f"data_type/sp_data/others_dataset.fasta"), format='fasta')
 
 
-class SPSampler(torch.utils.data.RandomSampler):
-    def __init__(self, dataset, replacement=False, num_samples=None):
-        generator = torch.Generator()
-        generator.manual_seed(0)
-        super().__init__(dataset, replacement, num_samples, generator)
+class SPDataLoader(DataLoader):
+    def __init__(self, dataset, shuffle=False, use_workers_init_fn=False, current_epoch=0, batch_size=1, num_workers=0, pin_memory=False):
+        self.current_epoch = current_epoch
+        self.generator = torch.Generator()
+        persistent_workers = False
+        if num_workers > 0:
+            persistent_workers = True
+        if shuffle:
+            super().__init__(
+                dataset,
+                batch_size=batch_size,
+                num_workers=num_workers,
+                persistent_workers=persistent_workers,
+                pin_memory=pin_memory,
+                worker_init_fn=self.worker_init_fn,
+                generator=self.generator
+            )
+        else:
+            super().__init__(
+                dataset,
+                batch_size=batch_size,
+                num_workers=num_workers,
+                persistent_workers=persistent_workers,
+                shuffle=False,
+                worker_init_fn=self.worker_init_fn if use_workers_init_fn else None,
+                pin_memory=pin_memory
+            )
+
+    def worker_init_fn(self, worker_id):
+        seed = worker_id + self.current_epoch
+        torch.manual_seed(seed)
+        self.generator.manual_seed(seed)
 
 
 if __name__ == "__main__":
