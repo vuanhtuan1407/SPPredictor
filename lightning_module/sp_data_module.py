@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 
 import lightning as L
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from torch.utils.data import DataLoader
 
 import params
 import utils as ut
@@ -57,18 +58,30 @@ class SPDataModule(L.LightningDataModule):
             test_paths = [f'data/sp_data/train_set_partition_2.json', f'data/sp_data/test_set_partition_2.json']
             self.test_set = SPDataset(json_paths=ut.abspaths(test_paths), data_type=self.data_type)
 
+    # def train_dataloader(self) -> TRAIN_DATALOADERS:
+    #     print(self.trainer.current_epoch)
+    #     return SPDataLoader(self.train_set, current_epoch=self.trainer.current_epoch, shuffle=True,
+    #                         use_workers_init_fn=False, batch_size=self.batch_size, num_workers=self.num_workers,
+    #                         pin_memory=True)
+    #
+    # def val_dataloader(self) -> EVAL_DATALOADERS:
+    #     return SPDataLoader(self.val_set, current_epoch=self.trainer.current_epoch, shuffle=False,
+    #                         use_workers_init_fn=False, batch_size=self.batch_size, num_workers=self.num_workers,
+    #                         pin_memory=True)
+    #
+    # def test_dataloader(self) -> EVAL_DATALOADERS:
+    #     return SPDataLoader(self.test_set, batch_size=self.batch_size, shuffle=False, use_workers_init_fn=False)
+
     def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return SPDataLoader(self.train_set, current_epoch=self.trainer.current_epoch, shuffle=True,
-                            use_workers_init_fn=True, batch_size=self.batch_size, num_workers=self.num_workers,
-                            pin_memory=True)
+        return DataLoader(self.train_set, shuffle=True, batch_size=self.batch_size, num_workers=self.num_workers,
+                          pin_memory=True)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return SPDataLoader(self.val_set, current_epoch=self.trainer.current_epoch, shuffle=False,
-                            use_workers_init_fn=True, batch_size=self.batch_size, num_workers=self.num_workers,
-                            pin_memory=True)
+        return DataLoader(self.val_set, shuffle=False, batch_size=self.batch_size, num_workers=self.num_workers,
+                          pin_memory=True)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
-        return SPDataLoader(self.test_set, batch_size=self.batch_size, shuffle=False, use_workers_init_fn=False)
+        return DataLoader(self.test_set, batch_size=self.batch_size, shuffle=False)
 
 
 if __name__ == "__main__":

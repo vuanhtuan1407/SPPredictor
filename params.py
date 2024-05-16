@@ -15,9 +15,9 @@ MODEL AND TRAINER CONFIGURATION
 """
 # Training
 MODEL_TYPE = "cnn"
-DATA_TYPE = 'aa'
-CONF_TYPE = 'lite'
-EPOCHS = 3
+DATA_TYPE = 'smiles'
+CONF_TYPE = 'default'
+EPOCHS = 100
 # ENV = 'kaggle'
 USE_ORGANISM = False
 
@@ -31,7 +31,7 @@ NUM_WORKERS = 0  # set to 0 because of some random_seeding reason
 FREEZE_PRETRAINED = False
 
 DEVICES: list[int] | str | int = 'auto'
-ACCELERATOR = 'auto'
+ACCELERATOR = 'cpu'
 
 ENABLE_CHECKPOINTING = True
 
@@ -40,5 +40,5 @@ ENABLE_CHECKPOINTING = True
 """
 LOGGER CONFIGURATION
 """
-USE_LOGGER = False
+USE_LOGGER = True
 LOG_DIR = 'logs'  # relative path

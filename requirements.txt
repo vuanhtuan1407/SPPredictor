@@ -9,3 +9,4 @@ torchmetrics==1.2.1
 wandb==0.16.5
 matplotlib==3.8.4
 rich==13.7.1
+biopython==1.83
