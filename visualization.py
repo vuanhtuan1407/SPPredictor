@@ -300,7 +300,7 @@ def visualize_metrics(checkpoint_names: list[str]):
             df = dfs[j]
             metrics[metric][model] = df[df['metrics'] == metric].values[0][1:]
         ax = plt.subplot(1, 1, i + 1)
-        bar_plot(ax, metrics[metric], total_width=0.5, single_width=1.2)
+        bar_plot(ax, metrics[metric], total_width=0.8, single_width=0.9)
         plt.xticks(range(6), list(params.SP_LABELS.keys()))
         plt.title(metric)
     # plt.show()
@@ -351,8 +351,9 @@ def visualize():
 if __name__ == '__main__':
     # visualize_data()
     visualize_metrics([
-        "cnn-aa-default-0_epochs=100",
+        "cnn-aa-default-1_epochs=100",
         "transformer-aa-lite-1_epochs=100",
         "lstm-aa-lite-1_epochs=100",
-        "st_bilstm-aa-lite-1_epochs=100"
+        "st_bilstm-aa-lite-1_epochs=100",
+        "bert-aa-default-1_epochs=100"
     ])

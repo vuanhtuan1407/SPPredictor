@@ -106,6 +106,7 @@ class SPModule(L.LightningModule):
 
     def base_step(self, batch, batch_idx):
         x, lb, organism = batch
+        print(x)
         x = self.tokenize_input(x)
         # pred = None  # uncomment this line in case got error do not have variable `pred` defined
         if self.use_organism:
@@ -173,7 +174,7 @@ class SPModule(L.LightningModule):
     def on_test_end(self) -> None:
         # TODO: Tạo một metrics dict để lưu các giá trị này lại và print (xem xét tạo một func như class_report của sklearn
 
-        softmax = Softmax()
+        softmax = Softmax(dim=-1)
 
         # Apply argmax on these outputs (only for label) and evaluate the metric results
         total_pred = torch.tensor(self.test_outputs_pred_total, device=self.device)
@@ -193,7 +194,8 @@ class SPModule(L.LightningModule):
             all_lb = torch.argmax(all_lb, dim=1)
 
             # Print the statistic (the following function has ERROR about syntax)
-            self._save_results_to_txt(all_pred.clone().detach().cpu(), all_lb.clone().detach().cpu(), organism=k)
+            if params.USE_LOGGER:
+                self._save_results_to_txt(all_pred.clone().detach().cpu(), all_lb.clone().detach().cpu(), organism=k)
 
             f1_test[o] = (self.f1(all_pred, all_lb) * 100).tolist()
             recall_test[o] = (self.recall(all_pred, all_lb) * 100).tolist()
@@ -248,7 +250,8 @@ class SPModule(L.LightningModule):
 
         print(metric_dict)
 
-        self._save_metrics_to_csv(metric_dict)
+        if params.USE_LOGGER:
+            self._save_metrics_to_csv(metric_dict)
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         self.checkpoint_name = params.CHECKPOINT.split('.')[0]

@@ -70,10 +70,17 @@ if __name__ == '__main__':
         logger=logger,
         enable_checkpointing=params.ENABLE_CHECKPOINTING,
         val_check_interval=1.0,
+        reload_dataloaders_every_n_epochs=1,
         callbacks=[model_checkpoint, early_stopping],
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module)
+
+    # ckpt_resume = ut.abspath('checkpoints/cnn-aa-lite-0_epochs=3.ckpt')
+    # if not os.path.exists(ckpt_resume):
+    #     trainer.fit(sp_module, datamodule=sp_data_module)
+    # else:
+    #     trainer.fit(sp_module, datamodule=sp_data_module, ckpt_path=ckpt_resume)
 
     if logger:  # turn off wandb quiet if logger is not False
         wandb.finish(quiet=True)

@@ -55,7 +55,7 @@ model_checkpoint = ModelCheckpoint(
     save_on_train_epoch_end=True,
     mode='min',
     save_top_k=1,
-    save_weights_only=True,
+    # save_weights_only=True,
 )  # return location: ~/checkpoints/<model>-<data>-<conf>-<used_org>_epochs=<epochs>[_v<ver>].ckpt
 model_checkpoint.CHECKPOINT_JOIN_CHAR = '_'
 

@@ -3,6 +3,7 @@ import random
 import time
 
 import pandas as pd
+import torch.utils.data
 from Bio import SeqIO
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
@@ -157,6 +158,13 @@ def _split_dataset_by_organism(file=None):
             others.append(record)
     SeqIO.write(eukarya, ut.abspath(f"data_type/sp_data/eukarya_dataset.fasta"), format='fasta')
     SeqIO.write(others, ut.abspath(f"data_type/sp_data/others_dataset.fasta"), format='fasta')
+
+
+class SPSampler(torch.utils.data.RandomSampler):
+    def __init__(self, dataset, replacement=False, num_samples=None):
+        generator = torch.Generator()
+        generator.manual_seed(0)
+        super().__init__(dataset, replacement, num_samples, generator)
 
 
 if __name__ == "__main__":

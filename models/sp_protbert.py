@@ -1,6 +1,6 @@
+import torch
 from torch import nn
 from transformers import BertModel
-from wandb.wandb_torch import torch
 
 import params
 from models.nn_layers import Classifier, OrganismEmbedding
@@ -34,7 +34,7 @@ class ProtBertOrganismClassifier(nn.Module):
         self.bert = BertModel(config=config)
         if params.FREEZE_PRETRAINED and params.MODEL_TYPE == "bert_pretrained":
             self.freeze_pretrained_layer()
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=config.hidden_size)
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=config.hidden_size * 2)
         self.organism_embedding = OrganismEmbedding(num_orgs=len(params.ORGANISMS), e_dim=config.hidden_size)
 
     def forward(self, x, org):

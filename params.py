@@ -16,17 +16,17 @@ MODEL AND TRAINER CONFIGURATION
 # Training
 MODEL_TYPE = "cnn"
 DATA_TYPE = 'aa'
-CONF_TYPE = 'default'
-EPOCHS = 1
+CONF_TYPE = 'lite'
+EPOCHS = 3
 # ENV = 'kaggle'
-USE_ORGANISM = True
+USE_ORGANISM = False
 
 # Testing
-CHECKPOINT: str = "transformer-aa-lite-1_epochs=100.ckpt"
+CHECKPOINT: str = "cnn-aa-lite-0_epochs=1.ckpt"
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7
-NUM_WORKERS = 1  # set to 1 because of some random_seeding reason
+NUM_WORKERS = 0  # set to 0 because of some random_seeding reason
 # ORGANISM = 'others'  # currently do not need to use this param
 FREEZE_PRETRAINED = False
 

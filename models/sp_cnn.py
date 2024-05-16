@@ -19,7 +19,7 @@ class ConvolutionalClassifier(nn.Module):
             n_base=config['n_base']
         )
         self.flatten = nn.Flatten()
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=1024)
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=512)
         # self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x):
