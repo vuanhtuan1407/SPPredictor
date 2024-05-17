@@ -186,7 +186,8 @@ class SPDataLoader(DataLoader):
         if use_workers_init_fn:
             worker_init_fn = self.worker_init_fn
         if use_sp_sampler:
-            sp_sampler = SPSampler(dataset, batch_size, current_epoch, shuffle=True)
+            # warnings.warn("Do not set `shuffle` while using `use_sp_sampler`. Automatically set `shuffle=True`.")
+            sp_sampler = SPBatchRandomSampler(dataset, batch_size, current_epoch, shuffle=True)
             super().__init__(
                 dataset=dataset,
                 batch_sampler=sp_sampler,
@@ -208,9 +209,11 @@ class SPDataLoader(DataLoader):
 
     def worker_init_fn(self, worker_id):
         seed = worker_id + self.current_epoch
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
 
-class SPSampler(Sampler[List[int]]):
+class SPBatchRandomSampler(Sampler[List[int]]):
     def __init__(self, dataset: Dataset, batch_size: int, current_epoch: int, valid_indices=None, shuffle=False,
                  replacement: bool = False, num_samples: Optional[int] = None, generator=None, drop_last=False):
         super(Sampler, self).__init__()
@@ -224,35 +227,21 @@ class SPSampler(Sampler[List[int]]):
         data_source = Subset(dataset, valid_indices)
         self.batch_size = batch_size
         self.drop_last = drop_last
-        if generator is None and shuffle:
+        if shuffle and generator is None:
             torch.manual_seed(current_epoch)
             torch.cuda.manual_seed(current_epoch)
-        elif generator is None and not shuffle:
-            torch.manual_seed(0)
-            torch.cuda.manual_seed(0)
         self.standard_sampler = RandomSampler(data_source=data_source, replacement=replacement,
                                               num_samples=num_samples, generator=generator)
-        self.current_hard_indices = [*range(len(dataset))]
-        self.next_hard_indices = []
 
     def __iter__(self):
         batch = []
         for idx in self.standard_sampler:
-            print(idx)
             batch.append(idx)
             if len(batch) == self.batch_size:
                 yield batch
-                # self.current_hard_indices = [*(set(self.current_hard_indices) - set(batch))]
                 batch = []
         if len(batch) > 0 and not self.drop_last:
             yield batch
-
-    def add_hard_indices(self, indices):
-        self.next_hard_indices.extend(indices)
-
-    def set_hard_indices(self):
-        self.current_hard_indices = deepcopy(self.next_hard_indices)
-        self.next_hard_indices = []
 
     def __len__(self):
         return math.ceil(self.num_samples / self.batch_size)
