@@ -227,11 +227,9 @@ class SPSampler(Sampler[List[int]]):
         if generator is None and shuffle:
             torch.manual_seed(current_epoch)
             torch.cuda.manual_seed(current_epoch)
-            generator = torch.Generator()
         elif generator is None and not shuffle:
             torch.manual_seed(0)
             torch.cuda.manual_seed(0)
-            generator = torch.Generator()
         self.standard_sampler = RandomSampler(data_source=data_source, replacement=replacement,
                                               num_samples=num_samples, generator=generator)
         self.current_hard_indices = [*range(len(dataset))]

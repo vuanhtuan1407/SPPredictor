@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any
 
 import lightning as L
+import torch
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 
 import params
