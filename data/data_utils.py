@@ -1,4 +1,5 @@
 import json
+import math
 import random
 import time
 from copy import deepcopy
@@ -185,7 +186,7 @@ class SPDataLoader(DataLoader):
         if use_workers_init_fn:
             worker_init_fn = self.worker_init_fn
         if use_sp_sampler:
-            sp_sampler = SPSampler(dataset, batch_size, current_epoch, shuffle)
+            sp_sampler = SPSampler(dataset, batch_size, current_epoch, shuffle=True)
             super().__init__(
                 dataset=dataset,
                 batch_sampler=sp_sampler,
@@ -233,19 +234,17 @@ class SPSampler(Sampler[List[int]]):
             generator = torch.Generator()
         self.standard_sampler = RandomSampler(data_source=data_source, replacement=replacement,
                                               num_samples=num_samples, generator=generator)
-        self.current_hard_indices = range(len(dataset))
+        self.current_hard_indices = [*range(len(dataset))]
         self.next_hard_indices = []
 
     def __iter__(self):
         batch = []
         for idx in self.standard_sampler:
-            if len(batch) <= self.num_samples and len(self.current_hard_indices) >= 0:
-                batch.append(
-                    self.current_hard_indices[torch.randint(low=0, high=len(self.current_hard_indices), size=(1,))])
-            else:
-                batch.append(idx)
+            print(idx)
+            batch.append(idx)
             if len(batch) == self.batch_size:
                 yield batch
+                # self.current_hard_indices = [*(set(self.current_hard_indices) - set(batch))]
                 batch = []
         if len(batch) > 0 and not self.drop_last:
             yield batch
@@ -258,7 +257,7 @@ class SPSampler(Sampler[List[int]]):
         self.next_hard_indices = []
 
     def __len__(self):
-        return len(self.standard_sampler)
+        return math.ceil(self.num_samples / self.batch_size)
 
 
 if __name__ == "__main__":

@@ -95,9 +95,14 @@ class SPModule(L.LightningModule):
         loss.backward()
 
     def tokenize_input(self, x):
+        # max_length = 0
+        if self.model_type == 'bert' or self.model_type == 'bert_pretrained':
+            max_length = self.model.config.max_position_embeddings
+        else:
+            max_length = self.model.config['max_len']
         encoded = self.tokenizer.batch_encode_plus(
             x,
-            max_length=self.model.config.max_position_embeddings,
+            max_length=max_length,
             truncation=True,
             padding='max_length'
         )
@@ -106,7 +111,6 @@ class SPModule(L.LightningModule):
 
     def base_step(self, batch, batch_idx):
         x, lb, organism = batch
-        print(x)
         x = self.tokenize_input(x)
         # pred = None  # uncomment this line in case got error do not have variable `pred` defined
         if self.use_organism:

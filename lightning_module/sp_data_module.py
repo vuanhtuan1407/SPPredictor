@@ -38,7 +38,6 @@ class SPDataModule(L.LightningDataModule):
 
     def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
         self.current_training_epoch = state_dict['current_training_epoch']
-        print(self.current_training_epoch)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit" or stage is None:
@@ -63,7 +62,7 @@ class SPDataModule(L.LightningDataModule):
                             pin_memory=True)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return SPDataLoader(self.val_set, current_epoch=self.trainer.current_epoch, shuffle=False, use_sp_sampler=True,
+        return SPDataLoader(self.val_set, current_epoch=self.trainer.current_epoch, shuffle=False, use_sp_sampler=False,
                             use_workers_init_fn=False, batch_size=self.batch_size, num_workers=self.num_workers,
                             pin_memory=True)
 
