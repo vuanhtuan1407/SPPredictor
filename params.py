@@ -14,10 +14,10 @@ ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
 MODEL AND TRAINER CONFIGURATION
 """
 # Training
-MODEL_TYPE = "bert_pretrained"
+MODEL_TYPE = "cnn"
 DATA_TYPE = 'aa'
-CONF_TYPE = 'default'
-EPOCHS = 100
+CONF_TYPE = 'lite'
+EPOCHS = 3
 # ENV = 'kaggle'
 USE_ORGANISM = True
 
@@ -31,7 +31,7 @@ NUM_WORKERS = 0  # set to 0 because of some random_seeding reason
 FREEZE_PRETRAINED = False
 
 DEVICES: list[int] | str | int = 'auto'
-ACCELERATOR = 'cpu'
+ACCELERATOR = 'auto'
 
 ENABLE_CHECKPOINTING = True
 

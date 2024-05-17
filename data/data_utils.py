@@ -1,13 +1,14 @@
 import json
 import random
 import time
+from copy import deepcopy
+from typing import List, Optional
 
-import numpy as np
 import pandas as pd
 import torch
 from Bio import SeqIO
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Sampler, Dataset, RandomSampler, Subset
 from tqdm import tqdm
 
 import utils as ut
@@ -163,44 +164,101 @@ def _split_dataset_by_organism(file=None):
 
 
 class SPDataLoader(DataLoader):
-    def __init__(self, dataset, shuffle=False, use_workers_init_fn=False, current_epoch=0, batch_size=1, num_workers=0, pin_memory=False):
-        # TODO: seeding while the same batch with the same epochs and different batch with different epochs
+    def __init__(
+            self,
+            dataset,
+            shuffle=False,
+            use_workers_init_fn=False,
+            use_sp_sampler=False,
+            current_epoch=0,
+            batch_size=1,
+            num_workers=0,
+            pin_memory=False
+    ):
+        self.dataset = dataset
         self.current_epoch = current_epoch
-        # self.generator = torch.Generator(device='cuda')
-        # self.generator.manual_seed(current_epoch)
-        self.generator = None
-        torch.manual_seed(current_epoch)
-        torch.cuda.manual_seed(current_epoch)
+        self.batch_size = batch_size
         persistent_workers = False
         if num_workers > 0:
             persistent_workers = True
-        if shuffle:
+        worker_init_fn = None
+        if use_workers_init_fn:
+            worker_init_fn = self.worker_init_fn
+        if use_sp_sampler:
+            sp_sampler = SPSampler(dataset, batch_size, current_epoch, shuffle)
             super().__init__(
-                dataset,
-                batch_size=batch_size,
+                dataset=dataset,
+                batch_sampler=sp_sampler,
                 num_workers=num_workers,
                 persistent_workers=persistent_workers,
-                pin_memory=pin_memory,
-                worker_init_fn=self.worker_init_fn if use_workers_init_fn else None,
-                generator=self.generator
+                worker_init_fn=worker_init_fn,
+                pin_memory=pin_memory
             )
         else:
             super().__init__(
-                dataset,
+                dataset=dataset,
+                shuffle=shuffle,
                 batch_size=batch_size,
                 num_workers=num_workers,
                 persistent_workers=persistent_workers,
-                shuffle=False,
-                worker_init_fn=self.worker_init_fn if use_workers_init_fn else None,
+                worker_init_fn=worker_init_fn,
                 pin_memory=pin_memory
             )
 
     def worker_init_fn(self, worker_id):
         seed = worker_id + self.current_epoch
-        # torch.manual_seed(seed)
-        # torch.cuda.manual_seed(seed)
-        # np.random.seed(seed)
-        # self.generator.manual_seed(seed)
+
+
+class SPSampler(Sampler[List[int]]):
+    def __init__(self, dataset: Dataset, batch_size: int, current_epoch: int, valid_indices=None, shuffle=False,
+                 replacement: bool = False, num_samples: Optional[int] = None, generator=None, drop_last=False):
+        super(Sampler, self).__init__()
+        if num_samples is None:
+            num_samples = len(dataset)
+        self.num_samples = num_samples
+        self.dataset = dataset  # dataset must implement __len__ method
+        if valid_indices is None:
+            valid_indices = range(len(dataset))
+        self.valid_indices = valid_indices
+        data_source = Subset(dataset, valid_indices)
+        self.batch_size = batch_size
+        self.drop_last = drop_last
+        if generator is None and shuffle:
+            torch.manual_seed(current_epoch)
+            torch.cuda.manual_seed(current_epoch)
+            generator = torch.Generator()
+        elif generator is None and not shuffle:
+            torch.manual_seed(0)
+            torch.cuda.manual_seed(0)
+            generator = torch.Generator()
+        self.standard_sampler = RandomSampler(data_source=data_source, replacement=replacement,
+                                              num_samples=num_samples, generator=generator)
+        self.current_hard_indices = range(len(dataset))
+        self.next_hard_indices = []
+
+    def __iter__(self):
+        batch = []
+        for idx in self.standard_sampler:
+            if len(batch) <= self.num_samples and len(self.current_hard_indices) >= 0:
+                batch.append(
+                    self.current_hard_indices[torch.randint(low=0, high=len(self.current_hard_indices), size=(1,))])
+            else:
+                batch.append(idx)
+            if len(batch) == self.batch_size:
+                yield batch
+                batch = []
+        if len(batch) > 0 and not self.drop_last:
+            yield batch
+
+    def add_hard_indices(self, indices):
+        self.next_hard_indices.extend(indices)
+
+    def set_hard_indices(self):
+        self.current_hard_indices = deepcopy(self.next_hard_indices)
+        self.next_hard_indices = []
+
+    def __len__(self):
+        return len(self.standard_sampler)
 
 
 if __name__ == "__main__":

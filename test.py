@@ -17,7 +17,7 @@ def parse_arguments():
     arg_parser.add_argument('--checkpoint', type=Optional[str], default=None)
     arg_parser.add_argument('--env', type=str, default='kaggle')
     arg_parser.add_argument('--devices', type=union_devices, default='auto')
-    # accelerator can be 'cpu', 'gpu', 'tpu' or use 'auto' instead of do not want to specify
+    # accelerator can be 'cpu', 'gpu', 'tpu' or use 'auto' instead if you do not want to specify
     arg_parser.add_argument('--accelerator', type=str, default='auto')
     arg_parser.add_argument('--model_type', type=str, default='cnn')
     arg_parser.add_argument('--data_type', type=str, default='aa')
