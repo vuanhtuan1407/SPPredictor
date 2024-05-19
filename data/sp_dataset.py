@@ -1,6 +1,7 @@
 import json
 from typing import Optional
 
+import dgl
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -10,24 +11,35 @@ import params
 
 class SPDataset(Dataset):
     def __init__(self, json_paths: Optional[list[str]], data_type: str):
+        self.data_type = data_type
         if json_paths is None or isinstance(json_paths, str):
             raise ValueError('provide path to dataset in list of str')
         df = pd.DataFrame(self._read_jsons(json_paths))
-        self.smiles = df['smiles'].tolist()
-        self.aa_seq = df['aa_seq'].tolist()
+        self.length = len(df)
         self.labels = df['label'].tolist()
         self.organisms = df['kingdom'].tolist()
-        self.data_type = data_type
+        if data_type == 'graph':
+            self.from_list = df['from_list'].tolist()
+            self.to_list = df['to_list'].tolist()
+            self.adj_matrix = df['adj_matrix'].tolist()
+        else:
+            self.smiles = df['smiles'].tolist()
+            self.aa_seq = df['aa_seq'].tolist()
 
     def __len__(self):
-        return len(self.smiles)
+        return self.length
 
     def __getitem__(self, index):
         organism = torch.tensor(params.ORGANISMS[self.organisms[index]])
-        seq = self.aa_seq[index] if self.data_type == 'aa' else self.smiles[index]
         label = torch.zeros(len(params.SP_LABELS), dtype=torch.int64)
         label[params.SP_LABELS[self.labels[index]]] = 1
-        return seq, label, organism  # return (list[int], list[int], int)
+        if self.data_type == 'graph':
+            graph = dgl.graph((self.from_list[index], self.to_list[index]))
+            feature = self.adj_matrix[index]
+            return graph, feature, organism, label
+        else:
+            seq = self.aa_seq[index] if self.data_type == 'aa' else self.smiles[index]
+            return seq, label, organism  # return (list[int], list[int], int)
 
     @staticmethod
     def _read_jsons(json_paths: list[str]):

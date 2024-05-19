@@ -2,9 +2,10 @@ import json
 import math
 import random
 import time
-from copy import deepcopy
+# from copy import deepcopy
 from typing import List, Optional
 
+import dgl
 import pandas as pd
 import torch
 from Bio import SeqIO
@@ -171,6 +172,7 @@ class SPDataLoader(DataLoader):
             shuffle=False,
             use_workers_init_fn=False,
             use_sp_sampler=False,
+            use_graph_collate_fn=False,
             current_epoch=0,
             batch_size=1,
             num_workers=0,
@@ -185,6 +187,9 @@ class SPDataLoader(DataLoader):
         worker_init_fn = None
         if use_workers_init_fn:
             worker_init_fn = self.worker_init_fn
+        collate_fn = None
+        if use_graph_collate_fn:
+            collate_fn = self.collate_fn
         if use_sp_sampler:
             # warnings.warn("Do not set `shuffle` while using `use_sp_sampler`. Automatically set `shuffle=True`.")
             sp_sampler = SPBatchRandomSampler(dataset, batch_size, current_epoch, shuffle=True)
@@ -194,6 +199,7 @@ class SPDataLoader(DataLoader):
                 num_workers=num_workers,
                 persistent_workers=persistent_workers,
                 worker_init_fn=worker_init_fn,
+                collate_fn=collate_fn,
                 pin_memory=pin_memory
             )
         else:
@@ -204,6 +210,7 @@ class SPDataLoader(DataLoader):
                 num_workers=num_workers,
                 persistent_workers=persistent_workers,
                 worker_init_fn=worker_init_fn,
+                collate_fn=collate_fn,
                 pin_memory=pin_memory
             )
 
@@ -211,6 +218,12 @@ class SPDataLoader(DataLoader):
         seed = worker_id + self.current_epoch
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
+
+    @staticmethod
+    def collate_fn(batch):
+        graphs, feats, lbs, organisms = map(list, zip(*batch))
+        g_feats = (dgl.batch(graphs), feats)
+        return g_feats, lbs, organisms
 
 
 class SPBatchRandomSampler(Sampler[List[int]]):

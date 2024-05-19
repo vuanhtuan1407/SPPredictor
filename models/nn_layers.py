@@ -1,6 +1,8 @@
 import math
 
+import dgl
 import torch
+from dgl.nn.pytorch import GraphConv
 from torch import nn
 
 import params
@@ -204,6 +206,27 @@ class ParallelBiLSTMEncoder(nn.Module):
 
     def forward(self, x):
         pass
+
+
+# class GraphConvEncoder(nn.Module):
+#     def __init__(self, d_model: int = 512, dropout: float = 0.1, use_relu_act: bool = True):
+#         super().__init__()
+#         self.d_model = d_model
+#         self.dropout = dropout
+#         self.use_relu_act = use_relu_act
+#
+#     def forward(self, x):
+#         from_list, to_list, adj_matrix = x
+#         g = dgl.graph((from_list, to_list))
+#         g = dgl.add_self_loop(g)
+#         act = None
+#         if self.use_relu_act:
+#             act = nn.ReLU()
+#         conv = GraphConv(20, self.d_model, norm='both', bias=True, activation=act)
+#         dropout = nn.Dropout(p=self.dropout)
+#         x = conv(g, adj_matrix)
+#         x = dropout(x)
+#         return x
 
 
 class Classifier(nn.Module):
