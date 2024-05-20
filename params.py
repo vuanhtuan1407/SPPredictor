@@ -15,8 +15,8 @@ MODEL AND TRAINER CONFIGURATION
 """
 # Training
 MODEL_TYPE = "cnn"
-DATA_TYPE = 'aa'
-CONF_TYPE = 'lite'
+DATA_TYPE = 'smiles'
+CONF_TYPE = 'default'
 EPOCHS = 3
 # ENV = 'kaggle'
 USE_ORGANISM = True
