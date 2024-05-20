@@ -49,7 +49,7 @@ class ConvolutionalOrganismClassifier(nn.Module):
             num_orgs=len(params.ORGANISMS),
             e_dim=config['d_model']
         )
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=3072)
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=120832)
 
     def forward(self, x, org):
         x = self.input_embedding(x)
