@@ -34,12 +34,13 @@ class SPDataset(Dataset):
         label = torch.zeros(len(params.SP_LABELS), dtype=torch.int64)
         label[params.SP_LABELS[self.labels[index]]] = 1
         if self.data_type == 'graph':
-            graph = dgl.graph((self.from_list[index], self.to_list[index]))
-            feature = self.adj_matrix[index]
-            return graph, feature, organism, label
+            graph = dgl.graph((self.from_list[index], self.to_list[index]), num_nodes=20)
+            graph = dgl.add_self_loop(graph)
+            graph.ndata['n_feat'] = torch.tensor(self.adj_matrix[index], dtype=torch.float)
+            return graph, torch.tensor(label), torch.tensor(organism)
         else:
             seq = self.aa_seq[index] if self.data_type == 'aa' else self.smiles[index]
-            return seq, label, organism  # return (list[int], list[int], int)
+            return seq, torch.tensor(label), torch.tensor(organism)  # return (list[int], list[int], int)
 
     @staticmethod
     def _read_jsons(json_paths: list[str]):

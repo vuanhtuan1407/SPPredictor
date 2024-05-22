@@ -1,25 +1,39 @@
 # import os
 import platform
+from typing import Literal
 
 OS_PLATFORM = platform.system()
 
+SP_LABELS = dict(NO_SP=0, SP=1, LIPO=2, TAT=3, PILIN=4, TATLIPO=5)
+ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
+
+"""
+DATA PREPARATION
+"""
+USE_PREPARED_DATA = False
 TRAIN_PATH = 'data/sp_data/train_set.fasta'
 BENCHMARK_PATH = 'data/sp_data/benchmark_set_sp5.fasta'
 
-SP_LABELS = dict(NO_SP=0, SP=1, LIPO=2, TAT=3, PILIN=4, TATLIPO=5)
-ORGANISMS = dict(EUKARYA=0, POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
-# ORGANISMS = dict(POSITIVE=1, NEGATIVE=2, ARCHAEA=3)
+USE_SPLIT_DATASET = False
+ON_ORGANISM: Literal['eukarya', 'others'] = 'others'  # use when you set `USE_SPLIT_DATASET=True`
 
 """
 MODEL AND TRAINER CONFIGURATION
 """
 # Training
-MODEL_TYPE = "cnn"
-DATA_TYPE = 'smiles'
+MODEL_TYPE = "gconv_trans"
+DATA_TYPE: Literal['aa', 'smiles', 'graph'] = 'graph'
 CONF_TYPE = 'default'
-EPOCHS = 3
+EPOCHS = 1
 # ENV = 'kaggle'
 USE_ORGANISM = True
+
+# MODEL_TYPE = "transformer"
+# DATA_TYPE: Literal['aa', 'smiles', 'graph'] = 'aa'
+# CONF_TYPE = 'default'
+# EPOCHS = 1
+# # ENV = 'kaggle'
+# USE_ORGANISM = True
 
 # Testing
 CHECKPOINT: str = "bert_pretrained-aa-default-1_epochs=100.ckpt"

@@ -111,7 +111,8 @@ class SPModule(L.LightningModule):
 
     def base_step(self, batch, batch_idx):
         x, lb, organism = batch
-        x = self.tokenize_input(x)
+        if self.tokenizer is not None:
+            x = self.tokenize_input(x)
         # pred = None  # uncomment this line in case got error do not have variable `pred` defined
         if self.use_organism:
             pred = self.model(x, organism)

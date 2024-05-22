@@ -10,7 +10,6 @@ from tokenizers.trainers import BpeTrainer
 from transformers import GPT2TokenizerFast, BertTokenizer
 
 import data.data_utils as dut
-import params
 import utils as ut
 
 SAVE_PATH = './tokenizer_smiles.json'
@@ -64,13 +63,16 @@ def train_bpe_tokenizer():
 
 
 def load_tokenizer(model_type, data_type):
-    tokenizer_path = ut.abspath(f'tokenizer/tokenizer_{data_type}.json')
-    tokenizer = GPT2TokenizerFast(tokenizer_file=tokenizer_path)
-    if tokenizer.pad_token is None:
-        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-    if model_type == 'bert_pretrained':
-        tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert")
-    return tokenizer
+    if data_type in ['aa', 'smiles']:
+        tokenizer_path = ut.abspath(f'tokenizer/tokenizer_{data_type}.json')
+        tokenizer = GPT2TokenizerFast(tokenizer_file=tokenizer_path)
+        if tokenizer.pad_token is None:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        if model_type == 'bert_pretrained':
+            tokenizer = BertTokenizer.from_pretrained("Rostlab/prot_bert")
+        return tokenizer
+    else:
+        return None
 
 
 if __name__ == '__main__':

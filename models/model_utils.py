@@ -2,6 +2,7 @@ import configs.config_utils as cut
 from models.sp_bilstm import StackedBiLSTMClassifier, StackedBiLSTMOrganismClassifier
 from models.sp_cnn import ConvolutionalClassifier, ConvolutionalOrganismClassifier
 from models.sp_cnn_transformer import CNNTransformerClassifier, CNNTransformerOrganismClassifier
+from models.sp_graphconv_transformer import GraphConvTransformerOrganismClassifier, GraphConvTransformerClassifier
 from models.sp_lstm import LSTMClassifier, LSTMOrganismClassifier
 from models.sp_protbert import ProtBertClassifier, ProtBertOrganismClassifier
 from models.sp_transformer import TransformerClassifier, TransformerOrganismClassifier
@@ -14,6 +15,7 @@ STACKED_BILSTM = 'st_bilstm'
 BERT = 'bert'
 BERT_PRETRAINED = 'bert_pretrained'
 CNN_TRANSFORMER = 'cnn_trans'
+GCONV_TRANSFORMER = 'gconv_trans'
 
 
 def load_model(model_type, data_type, conf_type, use_organism=False):
@@ -31,6 +33,8 @@ def load_model(model_type, data_type, conf_type, use_organism=False):
             return LSTMOrganismClassifier(config)
         elif model_type == CNN_TRANSFORMER:
             return CNNTransformerOrganismClassifier(config)
+        elif model_type == GCONV_TRANSFORMER and data_type == 'graph':
+            return GraphConvTransformerOrganismClassifier(config)
         else:
             return ValueError("Unknown model_type type")
     else:
@@ -46,5 +50,7 @@ def load_model(model_type, data_type, conf_type, use_organism=False):
             return LSTMClassifier(config)
         elif model_type == CNN_TRANSFORMER:
             return CNNTransformerClassifier(config)
+        elif model_type == GCONV_TRANSFORMER and data_type == 'graph':
+            return GraphConvTransformerClassifier(config)
         else:
             return ValueError("Unknown model_type type")
