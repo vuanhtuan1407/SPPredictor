@@ -167,6 +167,9 @@ class SPModule(L.LightningModule):
     def test_step(self, batch, batch_idx):
         _, lb, pred, loss, organism = self.base_step(batch, batch_idx)
 
+        # detach prediction results from pytorch graph in order to decrease memory usage
+        pred = pred.clone().detach()
+
         # Update outputs for calculate metrics on each class (for total)
         self.test_outputs_pred_total.extend(pred.tolist())
         self.test_outputs_lb_total.extend(lb.tolist())

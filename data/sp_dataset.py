@@ -37,10 +37,10 @@ class SPDataset(Dataset):
             graph = dgl.graph((self.from_list[index], self.to_list[index]), num_nodes=20)
             graph = dgl.add_self_loop(graph)
             graph.ndata['n_feat'] = torch.tensor(self.adj_matrix[index], dtype=torch.float)
-            return graph, torch.tensor(label), torch.tensor(organism)
+            return graph, label.clone().detach(), organism.clone().detach()
         else:
             seq = self.aa_seq[index] if self.data_type == 'aa' else self.smiles[index]
-            return seq, torch.tensor(label), torch.tensor(organism)  # return (list[int], list[int], int)
+            return seq, label.clone().detach(), organism.clone().detach()  # return (list[int], list[int], int)
 
     @staticmethod
     def _read_jsons(json_paths: list[str]):

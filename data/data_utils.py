@@ -244,7 +244,7 @@ class SPDataLoader(DataLoader):
         collate_fn = None
         if use_graph_collate_fn:
             collate_fn = SPDataLoader.graph_collate_fn
-        if use_sp_sampler:
+        if shuffle and use_sp_sampler:
             # warnings.warn("Do not set `shuffle` while using `use_sp_sampler`. Automatically set `shuffle=True`.")
             sp_sampler = SPBatchRandomSampler(dataset, batch_size, current_epoch, shuffle=True)
             super().__init__(

@@ -1,4 +1,5 @@
 import math
+from itertools import islice
 
 import torch
 from dgl.nn.pytorch import GraphConv
@@ -234,12 +235,30 @@ class GraphConvEncoder(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x):
-        h = self.conv1(x, x.ndata['n_feat'])
+    def forward(self, x, h):
+        h = self.conv1(x, h)
         h = self.conv2(x, h)
-        h = torch.reshape(h, (-1, 20, self.d_model))
+        h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
+        # h = torch.reshape(h, (-1, 20, self.d_model))
         h = self.dropout(h)
         return h
+
+    def return_batch(self, h, batch_num_nodes, max_len):
+        tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
+        ret = []
+        if max_len == "longest":
+            max_len = torch.max(batch_num_nodes).item()
+        if not isinstance(max_len, int):
+            raise ValueError('Use `int` or "longest"')
+        for sample in tmp:
+            if len(sample) > max_len:
+                ret.append(torch.stack(sample[:max_len]))
+            else:
+                while len(sample) < max_len:
+                    pad = torch.zeros(self.d_model)
+                    sample.append(pad)
+                ret.append(torch.stack(sample))
+        return torch.stack(ret)
 
 
 class Classifier(nn.Module):
