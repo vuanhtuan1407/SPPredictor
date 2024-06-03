@@ -22,7 +22,7 @@ SIGNALP6_PATH = ut.abspath('data/sp_data/train_set.fasta')
 SIGNAL5_BENCHMARK_PATH = ut.abspath('data/sp_data/benchmark_set_sp5.fasta')
 EUKARYAN_PATH = ut.abspath('data/sp_data/eukarya_dataset.fasta')
 OTHERS_PATH = ut.abspath('data/sp_data/others_dataset.fasta')
-PROT3D_PATH = ut.abspath('data/sp_data/3d_dataset.json')
+PROT3D_PATH = ut.abspath('data/sp_data/train_set_graph.json')
 
 
 # *** PUBLIC FUNCTION *** #

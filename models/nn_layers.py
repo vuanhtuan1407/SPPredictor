@@ -77,8 +77,8 @@ class TransformerEncoder(nn.Module):
             num_layers=num_layers
         )
 
-    def forward(self, x):
-        x = self.encoder(x)
+    def forward(self, x, mask=None):
+        x = self.encoder(x, src_key_padding_mask=mask)
         # use average [CLS] token with all other word tokens
         # x = torch.mean(x, dim=1)
 
@@ -223,42 +223,91 @@ class NodeApplyModule(nn.Module):
 
 
 class GraphConvEncoder(nn.Module):
-    def __init__(self, d_model: int = 512, dropout: float = 0.1, use_relu_act: bool = True, d_hidden: int = 1024):
+    def __init__(self, d_model: int = 512, n_layers=2, dropout: float = 0.1, use_relu_act: bool = True,
+                 d_hidden: int = 1024):
         super().__init__()
         self.d_model = d_model
         self.act = None
         if use_relu_act:
             self.act = nn.ReLU()
-        self.conv1 = GraphConv(20, d_hidden, norm='both', bias=True, activation=self.act, allow_zero_in_degree=True)
-        self.conv2 = GraphConv(d_hidden, self.d_model, norm='both', bias=True, activation=self.act,
+        self.convs = nn.ModuleList()
+        convFirst = GraphConv(20, d_hidden, norm='both', bias=True, activation=self.act, allow_zero_in_degree=True)
+        self.convs.append(convFirst)
+
+        for i in range(1, n_layers - 1):
+            convIn = GraphConv(d_hidden, d_hidden, norm='both', bias=True, activation=self.act,
                                allow_zero_in_degree=True)
+            self.convs.append(convIn)
+
+        convLast = GraphConv(d_hidden, d_model, norm='both', bias=True, activation=self.act,
+                             allow_zero_in_degree=True)
+        self.convs.append(convLast)
 
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, h):
-        h = self.conv1(x, h)
-        h = self.conv2(x, h)
-        h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
+        for (i, conv) in enumerate(self.convs):
+            h = conv(x, h)
+        # h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
+        h, mask = self.return_batch_plus(h, x.batch_num_nodes(), max_len='longest')
+        print(h.shape, mask.shape)
         # h = torch.reshape(h, (-1, 20, self.d_model))
         h = self.dropout(h)
-        return h
+        return h, mask
 
-    def return_batch(self, h, batch_num_nodes, max_len):
+    def return_batch(self, h, batch_num_nodes, max_len: str | int = 70):
+        device = h.get_device()
         tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
         ret = []
+        cls = torch.zeros((1, self.d_model), device=device)  # begin of sentence [CLS]
+        eos = torch.zeros((1, self.d_model), device=device)  # end of sentence [EOS]
         if max_len == "longest":
             max_len = torch.max(batch_num_nodes).item()
         if not isinstance(max_len, int):
             raise ValueError('Use `int` or "longest"')
-        for sample in tmp:
+
+        ret.append(cls)
+        for i, sample in enumerate(tmp):
             if len(sample) > max_len:
-                ret.append(torch.stack(sample[:max_len]))
+                sample = self.add_special_tokens(sample[:max_len], device)
+                ret.append(sample)
             else:
                 while len(sample) < max_len:
-                    pad = torch.zeros(self.d_model)
+                    pad = torch.zeros((1, self.d_model), device=device)
                     sample.append(pad)
-                ret.append(torch.stack(sample))
+                ret.extend(torch.stack(sample))
+        ret.append(eos)
+
         return torch.stack(ret)
+
+    def return_batch_plus(self, h, batch_num_nodes, max_len: str | int = 70):
+        device = h.get_device()
+        tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
+        ret = []
+
+        if max_len == "longest":
+            max_len = torch.max(batch_num_nodes).item()
+        if not isinstance(max_len, int):
+            raise ValueError('Use `int` or "longest"')
+        mask = torch.zeros((len(batch_num_nodes), max_len + 2), dtype=torch.float, device=device)
+        mask[:, -1] = float('-inf')
+        for i, sample in enumerate(tmp):
+            if len(sample) > max_len:
+                sample = sample[:max_len]
+            else:
+                while len(sample) < max_len:
+                    pad = torch.zeros(self.d_model, device=device)
+                    sample.append(pad)
+                    mask[i, len(sample)] = float('-inf')
+            sample = self.add_special_tokens(sample, device)
+            ret.append(sample)
+
+        return torch.stack(ret), mask
+
+    def add_special_tokens(self, sample, device):
+        cls = torch.zeros(self.d_model, device=device)  # begin of sentence [CLS]
+        eos = torch.zeros(self.d_model, device=device)  # end of sentence [EOS]
+        return torch.stack([cls, *sample, eos])
 
 
 class Classifier(nn.Module):

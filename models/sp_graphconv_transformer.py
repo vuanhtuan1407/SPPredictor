@@ -26,8 +26,8 @@ class GraphConvTransformerClassifier(nn.Module):
         )
 
     def forward(self, x):
-        x = self.graphconv_encoder(x, x.ndata['n_feat'])
-        x = self.transformer_encoder(x)
+        x, mask = self.graphconv_encoder(x, x.ndata['n_feat'])
+        x = self.transformer_encoder(x, mask=mask)
         x = self.classifier(x)
         return x
 
@@ -57,8 +57,8 @@ class GraphConvTransformerOrganismClassifier(nn.Module):
         )
 
     def forward(self, x, org):
-        x = self.graphconv_encoder(x, x.ndata['n_feat'])
-        x = self.transformer_encoder(x)
+        x, mask = self.graphconv_encoder(x, x.ndata['n_feat'])
+        x = self.transformer_encoder(x, mask=mask)
         org = self.organism_embedding(org)
         inp = torch.cat((x, org), dim=1)
         out = self.classifier(inp)

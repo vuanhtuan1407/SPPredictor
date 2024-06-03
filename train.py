@@ -55,6 +55,10 @@ if __name__ == '__main__':
     if not os.path.exists(checkpoint):
         checkpoint = None
 
+    trainer_callbacks = [early_stopping]
+    if params.ENABLE_CHECKPOINTING:
+        trainer_callbacks = [model_checkpoint, early_stopping]
+
     sp_module = SPModule(
         model_type=params.MODEL_TYPE,
         data_type=params.DATA_TYPE,
@@ -78,7 +82,7 @@ if __name__ == '__main__':
         enable_checkpointing=params.ENABLE_CHECKPOINTING,
         val_check_interval=1.0,
         reload_dataloaders_every_n_epochs=1,
-        callbacks=[model_checkpoint, early_stopping],
+        callbacks=trainer_callbacks,
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module, ckpt_path=checkpoint)

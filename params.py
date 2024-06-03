@@ -41,13 +41,12 @@ CHECKPOINT: str = "bert_pretrained-aa-default-1_epochs=100.ckpt"
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7
 NUM_WORKERS = 0  # set to 0 because of some random_seeding reason
-# ORGANISM = 'others'  # currently do not need to use this param
 FREEZE_PRETRAINED = False
 
 DEVICES: list[int] | str | int = 'auto'
 ACCELERATOR = 'auto'
 
-ENABLE_CHECKPOINTING = True
+ENABLE_CHECKPOINTING = False
 
 # DEVICE = 'cpu'  # use when applying old training process
 

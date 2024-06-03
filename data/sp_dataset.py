@@ -34,7 +34,7 @@ class SPDataset(Dataset):
         label = torch.zeros(len(params.SP_LABELS), dtype=torch.int64)
         label[params.SP_LABELS[self.labels[index]]] = 1
         if self.data_type == 'graph':
-            graph = dgl.graph((self.from_list[index], self.to_list[index]), num_nodes=20)
+            graph = dgl.graph((self.from_list[index], self.to_list[index]))
             graph = dgl.add_self_loop(graph)
             graph.ndata['n_feat'] = torch.tensor(self.adj_matrix[index], dtype=torch.float)
             return graph, label.clone().detach(), organism.clone().detach()
