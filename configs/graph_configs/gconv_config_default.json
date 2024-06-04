@@ -1,0 +1,6 @@
+{
+  "d_model": 512,
+  "dropout": 0.1,
+  "use_relu_act": true,
+  "d_hidden": 1024
+}

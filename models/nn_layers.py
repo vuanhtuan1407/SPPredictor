@@ -224,9 +224,10 @@ class NodeApplyModule(nn.Module):
 
 class GraphConvEncoder(nn.Module):
     def __init__(self, d_model: int = 512, n_layers=2, dropout: float = 0.1, use_relu_act: bool = True,
-                 d_hidden: int = 1024):
+                 d_hidden: int = 1024, use_special_tokens: bool = False):
         super().__init__()
         self.d_model = d_model
+        self.use_special_tokens = use_special_tokens
         self.act = None
         if use_relu_act:
             self.act = nn.ReLU()
@@ -249,34 +250,33 @@ class GraphConvEncoder(nn.Module):
         for (i, conv) in enumerate(self.convs):
             h = conv(x, h)
         # h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
-        h, mask = self.return_batch_plus(h, x.batch_num_nodes(), max_len='longest')
-        print(h.shape, mask.shape)
-        # h = torch.reshape(h, (-1, 20, self.d_model))
-        h = self.dropout(h)
-        return h, mask
+        if self.use_special_tokens:
+            h, mask = self.return_batch_plus(h, x.batch_num_nodes(), max_len='longest')
+            # h = torch.reshape(h, (-1, 20, self.d_model))
+            h = self.dropout(h)
+            return h, mask
+        else:
+            h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
+            h = self.dropout(h)
+            return h
 
     def return_batch(self, h, batch_num_nodes, max_len: str | int = 70):
         device = h.get_device()
         tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
         ret = []
-        cls = torch.zeros((1, self.d_model), device=device)  # begin of sentence [CLS]
-        eos = torch.zeros((1, self.d_model), device=device)  # end of sentence [EOS]
         if max_len == "longest":
             max_len = torch.max(batch_num_nodes).item()
         if not isinstance(max_len, int):
             raise ValueError('Use `int` or "longest"')
 
-        ret.append(cls)
         for i, sample in enumerate(tmp):
             if len(sample) > max_len:
-                sample = self.add_special_tokens(sample[:max_len], device)
-                ret.append(sample)
+                sample = sample[:max_len]
             else:
                 while len(sample) < max_len:
-                    pad = torch.zeros((1, self.d_model), device=device)
+                    pad = torch.zeros(self.d_model, device=device)
                     sample.append(pad)
-                ret.extend(torch.stack(sample))
-        ret.append(eos)
+            ret.append(torch.stack(sample))
 
         return torch.stack(ret)
 
@@ -284,7 +284,6 @@ class GraphConvEncoder(nn.Module):
         device = h.get_device()
         tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
         ret = []
-
         if max_len == "longest":
             max_len = torch.max(batch_num_nodes).item()
         if not isinstance(max_len, int):
@@ -300,14 +299,14 @@ class GraphConvEncoder(nn.Module):
                     sample.append(pad)
                     mask[i, len(sample)] = float('-inf')
             sample = self.add_special_tokens(sample, device)
-            ret.append(sample)
+            ret.append(torch.stack(sample))
 
         return torch.stack(ret), mask
 
     def add_special_tokens(self, sample, device):
         cls = torch.zeros(self.d_model, device=device)  # begin of sentence [CLS]
         eos = torch.zeros(self.d_model, device=device)  # end of sentence [EOS]
-        return torch.stack([cls, *sample, eos])
+        return [cls, *sample, eos]
 
 
 class Classifier(nn.Module):
