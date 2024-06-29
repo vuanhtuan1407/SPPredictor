@@ -50,10 +50,12 @@ if __name__ == '__main__':
             logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}'
         logger.experiment.config['batch_size'] = params.BATCH_SIZE
 
-    resume_ckpt = f'{params.MODEL_TYPE}-{params.DATA_TYPE}-{params.CONF_TYPE}-{int(params.USE_ORGANISM)}_epochs={params.EPOCHS}.ckpt'
-    checkpoint = ut.abspath(f'checkpoints/{resume_ckpt}')
-    if not os.path.exists(checkpoint):
-        checkpoint = None
+    # resume_ckpt = f'{params.MODEL_TYPE}-{params.DATA_TYPE}-{params.CONF_TYPE}-{int(params.USE_ORGANISM)}_epochs={params.EPOCHS}.ckpt'
+    # checkpoint = ut.abspath(f'checkpoints/{resume_ckpt}')
+    # if not os.path.exists(checkpoint):
+    #     checkpoint = None
+
+    checkpoint = None
 
     trainer_callbacks = [early_stopping]
     if params.ENABLE_CHECKPOINTING:

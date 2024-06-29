@@ -36,7 +36,7 @@ USE_ORGANISM = True
 # USE_ORGANISM = True
 
 # Testing
-CHECKPOINT: str = "bert_pretrained-aa-default-1_epochs=100.ckpt"
+CHECKPOINT: str = "bert-aa-default-0_epochs=100.ckpt"
 
 BATCH_SIZE = 8
 LEARNING_RATE = 1e-7

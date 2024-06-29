@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 import params
-from models.nn_layers import GraphConvEncoder, TransformerEncoder, Classifier, OrganismEmbedding
+from models.nn_layers import GraphConvEncoder, TransformerEncoder, Classifier, OrganismEmbedding, PositionalEncoding
 
 
 class GraphConvTransformerClassifier(nn.Module):
@@ -16,6 +16,10 @@ class GraphConvTransformerClassifier(nn.Module):
             d_hidden=config['d_hidden'],
             use_special_tokens=True
         )
+        self.positional_encoding = PositionalEncoding(
+            d_model=config['d_model'],
+            max_len=config['max_len'],
+        )
         self.transformer_encoder = TransformerEncoder(
             d_model=config['d_model'],
             nhead=config['nhead'],
@@ -28,6 +32,7 @@ class GraphConvTransformerClassifier(nn.Module):
 
     def forward(self, x):
         x, mask = self.graphconv_encoder(x, x.ndata['n_feat'])
+        x = self.positional_encoding(x)
         x = self.transformer_encoder(x, mask=mask)
         x = self.classifier(x)
         return x
@@ -43,6 +48,10 @@ class GraphConvTransformerOrganismClassifier(nn.Module):
             use_relu_act=config['use_relu_act'],
             d_hidden=config['d_hidden'],
             use_special_tokens=True
+        )
+        self.positional_encoding = PositionalEncoding(
+            d_model=config['d_model'],
+            max_len=config['max_len'],
         )
         self.transformer_encoder = TransformerEncoder(
             d_model=config['d_model'],
@@ -60,6 +69,7 @@ class GraphConvTransformerOrganismClassifier(nn.Module):
 
     def forward(self, x, org):
         x, mask = self.graphconv_encoder(x, x.ndata['n_feat'])
+        x = self.positional_encoding(x)
         x = self.transformer_encoder(x, mask=mask)
         org = self.organism_embedding(org)
         inp = torch.cat((x, org), dim=1)

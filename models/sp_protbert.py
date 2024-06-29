@@ -48,3 +48,10 @@ class ProtBertOrganismClassifier(nn.Module):
     def freeze_pretrained_layer(self):
         for param in self.bert.parameters():
             param.requires_grad = False
+
+
+if __name__ == '__main__':
+    import configs.config_utils as cut
+    config = cut.load_config('bert', 'aa', 'default')
+    model = ProtBertOrganismClassifier(config)
+    print(model)

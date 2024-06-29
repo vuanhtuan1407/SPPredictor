@@ -17,12 +17,12 @@ class GraphConvClassifier(nn.Module):
             use_special_tokens=False
         )
         self.classifier = Classifier(
-            d_model=config['d_model'] * 2,
+            d_model=config['d_model'],
             num_class=len(params.SP_LABELS)
         )
 
     def forward(self, x):
-        x = self.graphconv_encoder(x)
+        x = self.graphconv_encoder(x, x.ndata['n_feat'])
         x = torch.mean(x, dim=1)
         x = self.classifier(x)
         return x
@@ -48,7 +48,7 @@ class GraphConvOrganismClassifier(nn.Module):
         )
 
     def forward(self, x, org):
-        x = self.graphconv_encoder(x)
+        x = self.graphconv_encoder(x, x.ndata['n_feat'])
         x = torch.mean(x, dim=1)
         org = self.organism_embedding(org)
         inp = torch.cat((x, org), dim=1)

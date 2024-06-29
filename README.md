@@ -1,59 +1,48 @@
-# TODO
+**1. Environment configuration**
 
-- sửa `kingdom` --> `organism`
+- python version: `python==3.11`
 
-1. configs
 
-- chia thành 2 dirs
-    - aa_configs
-    - smiles_configs
-- tạo một file `build_config.py` để build config (**Cân nhắc**)
+- Install libs with specific version in `requirements.txt`, except `torch` and `dgl`.
+  - pytorch and CUDA: installing from original page of Pytorch, `torch==2.1.0+cuda==11.8` or `pytorch==2.2.0+cuda==12.0`
+  - dgl: installing from original page of Deep Graph Library with pytorch and CUDA config above.
 
-2. data
 
-- chia thành 2 dirs
-    - aa_data: chứa data liên quan đến amino acid
-    - sp_data: chứa data liên quan đến signal protein
-        - train_set.fasta
-        - uniprot_sprot.fasta
-        - benchmark_set_sp5.fasta
-- `data_utils.py`
-- `sp_dataset.py`
+- **Note**: 
+  - We recommend you to create environment with `anconda`.
+  - Pytorch may need to be installed before you want to install other libs.
+  - Some operating system based on UNIX like Linux may not work with config `torch==2.1.0+cuda==11.8` smoothly, so only if you are using Windows and want to rebuild our environment exactly, we recommend you to install config `pytorch==2.2.0+cuda==12.0` for pytorch. 
 
-3. lightning_module
 
-- sửa lại theo template:
-    - data_module: prepare_data, split, loader
-    - module: define model, metrics, loss func,...; training/validation/testing/predict(_nếu cần thiết_) progess và một
-      số hàm phụ dùng để lưu results
+**2. Using**
 
-4. model
+Most of params for training, testing were adjusted in `params.py`.
 
-- `nn_layers.py`
-- `sp_<model>.py`
-- tạo thêm một file `model_utils.py`: load_model, freeze_layer, unfreeze_layer, load_config (_nếu cần thiết_)
+a. Training
 
-5. callbacks
+We provide 3 types of protein representation, which were divided into 3 subfolders in folder `config`. 
 
-- đưa file `callback_utils.py` vào thư mục callbacks
+Before you training a model, you need to create a config file and put it into correct folder.
+Config file must be named follow this format `<model_type>_<data_type>_<conf_type>.json`. If you only have 1 config for 1 model, you still need to replace `<conf_type>` with `default`.
 
-6. out
+If you want to create a new model, you must write its structure in a model file and put this file into folder `models`. After that, you need to import this model into `model_utils.py` with correct place of config.
 
-- gồm 3 dirs
-    - đầu ra dự đoán của model: `results`
-    - kết quả các độ đo: `metrics`
-    - hình ảnh visualize `figure`: data, metrics, wrong predict label, training/validation loss
+Adjust `base_step` method in `lightning_module/sp_module.py` to ensure your model works well.
 
-7. `visualization.py`
+Run `train.py` to perform training process.
 
-- visualize data: (**có thể sử dụng pycharm notebook**)
-- visualize kết quả độ đo trên từng loài, từng nhãn
-- visualize kết quả sai trên từng loài, từng nhãn
+b. Testing
 
-8. checkpoints
+After training, your model will be saved into folder `checkpoints`.
 
-- transformer: base - medium - heavy
-- cnn: base - medium - heavy
-- lstm/bi-lstm: base - medium - heavy
-- bert: protbert - pretrained protbert - pretrained protbert with freezing embedding layer
-- **Note: Đánh giá xem bao nhiêu tham số (dung lượng bao nhiêu) để được đánh giá là medium or heavy**
+Copy model filename and assign `CHECKPOINT` in `params.py` with this filename.
+
+Run `test.py` to perform testing process.
+
+c. Visualization
+
+After testing, evaluating file will be created and saved into folder `out`.
+
+There are 4 important files you may need to concern in folder `out/metrics`: `ap_score.py`, `ap_score_combine_ORG.csv`, `ap_score_combine_TOTAL.csv`, `ap_score_TOTAL.csv`.
+
+You can use our visualization tools by running `visualization.py` (remember to import all models you need to visualize and remove the model filename extension `.ckpt`) or you can use other apps such as MS Power Bi.
