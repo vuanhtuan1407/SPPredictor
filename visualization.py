@@ -165,6 +165,32 @@ def visualize_data():
                          filename=f'statistics_on_test_labels_{k}.jpg')
 
 
+def statistic_num_samples_to_csv():
+    records = SeqIO.parse(dut.SIGNALP6_PATH, 'fasta')
+    statistics_on_organisms, statistics_on_labels, statistics_on_labels_organism = _statistics_on_total(records)
+
+    # extract train/val/test set
+    train_paths = [f'data/sp_data/train_set_partition_0.json', f'data/sp_data/train_set_partition_1.json']
+    val_paths = [f'data/sp_data/test_set_partition_0.json', f'data/sp_data/test_set_partition_1.json']
+    test_paths = [f'data/sp_data/train_set_partition_2.json', f'data/sp_data/test_set_partition_2.json']
+
+    train_records, val_records, test_records = [], [], []
+    for train_path, val_path, test_path in zip(train_paths, val_paths, test_paths):
+        with open(train_path, 'r') as f:
+            train_records.extend(json.load(f))
+        with open(val_path, 'r') as f:
+            val_records.extend(json.load(f))
+        with open(test_path, 'r') as f:
+            test_records.extend(json.load(f))
+
+    statistics_on_train_organisms, statistics_on_train_labels, statistics_on_train_labels_organism = _statistics_on_train_val_test(
+        train_records)
+    statistics_on_val_organisms, statistics_on_val_labels, statistics_on_val_labels_organism = _statistics_on_train_val_test(
+        val_records)
+    statistics_on_test_organisms, statistics_on_test_labels, statistics_on_test_labels_organism = _statistics_on_train_val_test(
+        test_records)
+
+
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
     """Draws a bar plot with multiple bars per data point.
 
@@ -241,6 +267,13 @@ def _extract_metric_filename(filename):
     return model, data, conf, use_org, organism
 
 
+def _extract_model_filename(filename):
+    model, data, conf = filename.split('-')[0:3]
+    use_org = int(filename.split("-")[3].split('_')[0])
+    is_freeze = int(filename.split('-')[3].split('_')[-1] == 'v1')
+    return model, data, conf, use_org, is_freeze
+
+
 def visualize_metrics(checkpoint_names: list[str]):
     """Visualize the result of the metrics on organisms and on labels
     """
@@ -248,7 +281,7 @@ def visualize_metrics(checkpoint_names: list[str]):
     checkpoint_names = checkpoint_names
     dfs = []
     for k, o in params.ORGANISMS.items():
-        fig = plt.figure(figsize=(7, 6))
+        fig = plt.figure(figsize=(10, 6))
         fig.suptitle(k)
         metrics = {
             # "f1_score": {},
@@ -307,6 +340,256 @@ def visualize_metrics(checkpoint_names: list[str]):
     fig.savefig(ut.abspath(f'out/figures/metrics_on_TOTAL.png'))
 
 
+def select_and_save_ap_score_to_csv(models: list[str]):
+    filenames = []
+    model_types = []
+    # data_types = []
+    # use_orgs = []
+    organisms = []
+    ap_score = []
+    NO_SP, SP, LIPO, TAT, PILIN, TATLIPO = [], [], [], [], [], []
+    for model in models:
+        model_type, data_type, conf, use_org, is_freeze = _extract_model_filename(model)
+        if is_freeze:
+            model_type = model_type + "_freezed"
+        if data_type == 'aa':
+            data_type = "AA Seq"
+        if data_type == 'smiles':
+            data_type = "SMILES"
+        if data_type == 'graph':
+            data_type = "Graph 3D"
+        model_type = f"{model_type.upper()}, {data_type}, Organism: {'Yes' if use_org else 'No'}"
+        for org in params.ORGANISMS.keys():
+            model_types.append(model_type)
+            organisms.append(org)
+            filename = f"{model}_test_{org}.csv"
+            filenames.append(filename)
+    for filename in filenames:
+        df = pd.read_csv(ut.abspath(f'out/metrics/{filename}'))
+        ap = df[df['metrics'] == 'average_precision'].values[0][1:].tolist()
+        NO_SP.append(ap[0])
+        SP.append(ap[1])
+        LIPO.append(ap[2])
+        TAT.append(ap[3])
+        PILIN.append(ap[4])
+        TATLIPO.append(ap[5])
+        # ap_score.append(df[df['metrics'] == 'average_precision'].values[0][1:].tolist())
+
+    df_data = {
+        "model_type": model_types,
+        "organism": organisms,
+        "NO_SP": NO_SP,
+        "SP": SP,
+        "LIPO": LIPO,
+        "TAT": TAT,
+        "PILIN": PILIN,
+        "TATLIPO": TATLIPO
+    }
+    df = pd.DataFrame(df_data)
+    df.to_csv(ut.abspath(f'out/metrics/ap_score.csv'), index=True, index_label='index')
+
+    filenames = []
+    model_types = []
+    # data_types = []
+    # use_orgs = []
+    organisms = []
+    ap_score = []
+    NO_SP, SP, LIPO, TAT, PILIN, TATLIPO = [], [], [], [], [], []
+    for model in models:
+        model_type, data_type, conf, use_org, is_freeze = _extract_model_filename(model)
+        if is_freeze:
+            model_type = model_type + "_freezed"
+        if data_type == 'aa':
+            data_type = "AA seq"
+        if data_type == 'smiles':
+            data_type = "SMILES"
+        if data_type == 'graph':
+            data_type = "graph 3D"
+        model_type = f"{model_type.upper()}, {data_type}, Organism: {'Yes' if use_org else 'No'}"
+        model_types.append(model_type)
+        organisms.append('TOTAL')
+        filenames.append(f'{model}_test_metrics_TOTAL.csv')
+    for filename in filenames:
+        df = pd.read_csv(ut.abspath(f'out/metrics/{filename}'))
+        ap = df[df['metrics'] == 'average_precision'].values[0][1:].tolist()
+        NO_SP.append(ap[0])
+        SP.append(ap[1])
+        LIPO.append(ap[2])
+        TAT.append(ap[3])
+        PILIN.append(ap[4])
+        TATLIPO.append(ap[5])
+        # ap_score.append(df[df['metrics'] == 'average_precision'].values[0][1:].tolist())
+
+    df_data = {
+        "model_type": model_types,
+        "organism": organisms,
+        "NO_SP": NO_SP,
+        "SP": SP,
+        "LIPO": LIPO,
+        "TAT": TAT,
+        "PILIN": PILIN,
+        "TATLIPO": TATLIPO
+    }
+    df = pd.DataFrame(df_data)
+    df.to_csv(ut.abspath(f'out/metrics/ap_score_TOTAL.csv'), index=True, index_label='index')
+
+    filenames = []
+    model_types = []
+    # data_types = []
+    # use_orgs = []
+    labels = []
+    label_ids = []
+    ap_score = []
+    NO_SP, SP, LIPO, TAT, PILIN, TATLIPO = [], [], [], [], [], []
+    for model in models:
+        filenames.append(f'{model}_test_metrics_TOTAL.csv')
+    for i, filename in enumerate(filenames):
+        model = models[i]
+        model_type, data_type, conf, use_org, is_freeze = _extract_model_filename(model)
+        if is_freeze:
+            model_type = model_type + "_freezed"
+        if data_type == 'aa':
+            data_type = "AA seq"
+        if data_type == 'smiles':
+            data_type = "SMILES"
+        if data_type == 'graph':
+            data_type = "graph 3D"
+        model_type = f"{model_type.upper()}, {data_type}, Organism: {'Yes' if use_org else 'No'}"
+
+        df = pd.read_csv(ut.abspath(f'out/metrics/{filename}'))
+        ap = df[df['metrics'] == 'average_precision'].values[0][1:].tolist()
+        for k, lb in params.SP_LABELS.items():
+            model_types.append(model_type)
+            labels.append(k)
+            label_ids.append(lb)
+            ap_score.append(ap[lb])
+        # ap_score.append(df[df['metrics'] == 'average_precision'].values[0][1:].tolist())
+
+    df_data = {
+        "model_type": model_types,
+        "labels": labels,
+        "label_ids": label_ids,
+        "ap_score": ap_score
+    }
+    df = pd.DataFrame(df_data)
+    df.to_csv(ut.abspath(f'out/metrics/ap_score_TOTAL_visualize.csv'), index=True, index_label="index")
+
+
+def select_and_save_macro_micro_ap_score_to_csv(models):
+    # total
+    model_types = [[], []]
+    orgs = []
+    macro_ap = [[], []]
+    micro_ap = []
+    for model in models:
+        ap_org = pd.read_csv(ut.abspath(f'out/metrics/{model}_ap_score_ORG.csv'))
+        ap_total = pd.read_csv(ut.abspath(f'out/metrics/{model}_ap_score_TOTAL.csv'))
+
+        # ORG
+        for k, o in params.ORGANISMS.items():
+            if '_v1' in model:
+                model_type, data, use_org = ap_org[ap_org["index"] == o]['model'].values[0].split(',')
+                model_type = model_type + "_freeze"
+                model_types[0].append(f'{model_type},{data},{use_org}')
+            else:
+                model_types[0].append(ap_org[ap_org['index'] == o]['model'].values[0])
+            orgs.append(k)
+            macro_ap[0].append(ap_org[ap_org["index"] == o]['macro_ap'].values[0])
+
+        if '_v1' in model:
+            model_type, data, use_org = ap_org[ap_org["index"] == 0]['model'].values[0].split(',')
+            model_type = model_type + "_freeze"
+            model_types[1].append(f'{model_type},{data},{use_org}')
+        else:
+            model_types[1].append(ap_org[ap_org['index'] == 0]['model'].values[0])
+        macro_ap[1].append(ap_total[ap_total["index"] == 0]['macro_ap'].values[0])
+        micro_ap.append(ap_total[ap_total["index"] == 0]['micro_ap'].values[0])
+
+    metrics_org = {
+        "model": model_types[0],
+        "organism": orgs,
+        "macro_ap": [f'{(m/100):.3f}' for m in macro_ap[0]],
+    }
+
+    df_org = pd.DataFrame(metrics_org)
+    df_org.to_csv(ut.abspath(f'out/metrics/ap_score_combine_ORG.csv'), index=True, index_label="index")
+
+    metrics_total = {
+        "model": model_types[1],
+        "macro_ap": [f'{(m/100):.3f}' for m in macro_ap[1]],
+        "micro_ap": [f'{m :.3f}' for m in micro_ap]
+    }
+
+    df_total = pd.DataFrame(metrics_total)
+    df_total.to_csv(ut.abspath(f'out/metrics/ap_score_combine_TOTAL.csv'), index=True, index_label="index")
+
+
+def statistic_on_ap_score():
+    df = pd.read_csv(ut.abspath(f'out/metrics/ap_score.csv'))
+    df_total = pd.read_csv(ut.abspath(f'out/metrics/ap_score_TOTAL.csv'))
+
+    models = df_total['model_type'].unique()
+    num_models = len(models)
+
+    ranking_table = np.zeros((len(params.ORGANISMS), num_models, num_models))
+    ranking_table_total = np.zeros((num_models, num_models))
+
+    # for TOTAL
+    for k, l in params.SP_LABELS.items():
+        ranks = np.array(df_total[k].rank(method='min', ascending=False), dtype=int)
+        for i, rank in enumerate(ranks):
+            ranking_table_total[i][rank - 1] += 1
+
+    for k1, o in params.ORGANISMS.items():
+        for k2, l in params.SP_LABELS.items():
+            if df[df['organism'] == k1][k2].sum() != 0.0:
+                ranks = np.array(df[df['organism'] == k1][k2].rank(method='min', ascending=False), dtype=int)
+                for i, rank in enumerate(ranks):
+                    ranking_table[o][i][rank - 1] += 1
+
+    model_types = []
+    ranks = []
+    counts = []
+
+    for i in range(num_models):
+        for rank in range(num_models):
+            model_types.append(models[i])
+            ranks.append(rank + 1)
+            counts.append(ranking_table_total[i, rank])
+
+    df_data = {
+        "model_type": model_types,
+        "ranks": ranks,
+        "counts": counts
+    }
+
+    df_save = pd.DataFrame(df_data)
+    df_save.to_csv(ut.abspath(f'out/metrics/ranking_TOTAL_visualize.csv'), index=True, index_label='index')
+
+    model_types = []
+    ranks = []
+    counts = []
+    organism = []
+
+    for k, o in params.ORGANISMS.items():
+        for i in range(num_models):
+            for rank in range(num_models):
+                model_types.append(models[i])
+                ranks.append(rank + 1)
+                organism.append(k)
+                counts.append(ranking_table[o, i, rank])
+
+    df_data = {
+        "model_type": model_types,
+        "organism": organism,
+        "ranks": ranks,
+        "counts": counts
+    }
+
+    df_save = pd.DataFrame(df_data)
+    df_save.to_csv(ut.abspath(f'out/metrics/ranking_visualize.csv'), index=True, index_label='index')
+
+
 def visualize_results():
     """Visualize the prediction results on organisms and on labels, total, wrong label, correct label
     """
@@ -351,9 +634,97 @@ def visualize():
 if __name__ == '__main__':
     # visualize_data()
     visualize_metrics([
+        "cnn-aa-default-0_epochs=100",
+        # "transformer-aa-lite-0_epochs=100",
+        # "transformer-aa-lite-1_epochs=100",
+        "transformer-aa-lite-0_epochs=100",
+        "lstm-aa-default-0_epochs=100",
+        "st_bilstm-aa-default-0_epochs=100",
+        "bert-aa-default-0_epochs=100",
+        "bert_pretrained-aa-default-0_epochs=100",
+        "bert_pretrained-aa-default-0_epochs=100_v1",
+        "cnn_trans-aa-lite-0_epochs=100",
+        "cnn-smiles-default-0_epochs=100",
+        "transformer-smiles-lite-0_epochs=100",
+        "cnn_trans-smiles-lite-0_epochs=100",
+        "gconv-graph-heavy-0_epochs=100",
+        "gconv_trans-graph-default-0_epochs=100",
         "cnn-aa-default-1_epochs=100",
         "transformer-aa-lite-1_epochs=100",
         "lstm-aa-lite-1_epochs=100",
         "st_bilstm-aa-lite-1_epochs=100",
-        "bert-aa-default-1_epochs=100"
+        "bert-aa-default-1_epochs=100",
+        "bert_pretrained-aa-default-1_epochs=100",
+        "bert_pretrained-aa-default-1_epochs=100_v1",
+        "cnn_trans-aa-lite-1_epochs=100",
+        "cnn-smiles-default-1_epochs=100",
+        "transformer-smiles-lite-1_epochs=100",
+        "cnn_trans-smiles-lite-1_epochs=100",
+        "gconv-graph-heavy-1_epochs=100",
+        "gconv_trans-graph-default-1_epochs=100",
+    ])
+
+    select_and_save_ap_score_to_csv([
+        "cnn-aa-default-0_epochs=100",
+        # "transformer-aa-lite-0_epochs=100",
+        # "transformer-aa-lite-1_epochs=100",
+        "transformer-aa-lite-0_epochs=100",
+        "lstm-aa-default-0_epochs=100",
+        "st_bilstm-aa-default-0_epochs=100",
+        "bert-aa-default-0_epochs=100",
+        "bert_pretrained-aa-default-0_epochs=100",
+        "bert_pretrained-aa-default-0_epochs=100_v1",
+        "cnn_trans-aa-lite-0_epochs=100",
+        "cnn-smiles-default-0_epochs=100",
+        "transformer-smiles-lite-0_epochs=100",
+        "cnn_trans-smiles-lite-0_epochs=100",
+        "gconv-graph-heavy-0_epochs=100",
+        "gconv_trans-graph-default-0_epochs=100",
+        "cnn-aa-default-1_epochs=100",
+        "transformer-aa-lite-1_epochs=100",
+        "lstm-aa-lite-1_epochs=100",
+        "st_bilstm-aa-lite-1_epochs=100",
+        "bert-aa-default-1_epochs=100",
+        "bert_pretrained-aa-default-1_epochs=100",
+        "bert_pretrained-aa-default-1_epochs=100_v1",
+        "cnn_trans-aa-lite-1_epochs=100",
+        "cnn-smiles-default-1_epochs=100",
+        "transformer-smiles-lite-1_epochs=100",
+        "cnn_trans-smiles-lite-1_epochs=100",
+        "gconv-graph-heavy-1_epochs=100",
+        "gconv_trans-graph-default-1_epochs=100",
+
+    ])
+
+    statistic_on_ap_score()
+
+    select_and_save_macro_micro_ap_score_to_csv([
+        "cnn-aa-default-0_epochs=100",
+        # "transformer-aa-lite-0_epochs=100",
+        # "transformer-aa-lite-1_epochs=100",
+        "transformer-aa-lite-0_epochs=100",
+        "lstm-aa-default-0_epochs=100",
+        "st_bilstm-aa-default-0_epochs=100",
+        "bert-aa-default-0_epochs=100",
+        "bert_pretrained-aa-default-0_epochs=100",
+        "bert_pretrained-aa-default-0_epochs=100_v1",
+        "cnn_trans-aa-lite-0_epochs=100",
+        "cnn-smiles-default-0_epochs=100",
+        "transformer-smiles-lite-0_epochs=100",
+        "cnn_trans-smiles-lite-0_epochs=100",
+        "gconv-graph-heavy-0_epochs=100",
+        "gconv_trans-graph-default-0_epochs=100",
+        "cnn-aa-default-1_epochs=100",
+        "transformer-aa-lite-1_epochs=100",
+        "lstm-aa-lite-1_epochs=100",
+        "st_bilstm-aa-lite-1_epochs=100",
+        "bert-aa-default-1_epochs=100",
+        "bert_pretrained-aa-default-1_epochs=100",
+        "bert_pretrained-aa-default-1_epochs=100_v1",
+        "cnn_trans-aa-lite-1_epochs=100",
+        "cnn-smiles-default-1_epochs=100",
+        "transformer-smiles-lite-1_epochs=100",
+        "cnn_trans-smiles-lite-1_epochs=100",
+        "gconv-graph-heavy-1_epochs=100",
+        "gconv_trans-graph-default-1_epochs=100",
     ])

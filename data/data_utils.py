@@ -19,8 +19,10 @@ AA_DATA = pd.read_csv(ut.abspath('data/aa_data/smiles_string_aa.csv'))  # Load d
 UNIPROT_PATH = ut.abspath('data/sp_data/uniprot_sprot.fasta')
 SMILES_CORPUS_PATH = ut.abspath('data/sp_data/uniprot_smiles.txt')
 SIGNALP6_PATH = ut.abspath('data/sp_data/train_set.fasta')
+SIGNAL5_BENCHMARK_PATH = ut.abspath('data/sp_data/benchmark_set_sp5.fasta')
 EUKARYAN_PATH = ut.abspath('data/sp_data/eukarya_dataset.fasta')
 OTHERS_PATH = ut.abspath('data/sp_data/others_dataset.fasta')
+PROT3D_PATH = ut.abspath('data/sp_data/train_set_graph.json')
 
 
 # *** PUBLIC FUNCTION *** #
@@ -85,7 +87,7 @@ def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: boo
     :param benchmark: Define whether raw data_type will be used for benchmarking or not?
     :param raw_path: Path to raw data_type, defaults to `train_set.fasta`
     """
-    raw_path = SIGNALP6_PATH if raw_path is None else raw_path
+    raw_path = SIGNALP6_PATH if raw_path is None else ut.abspath(raw_path)
     partitioned_prot = {}
 
     records = SeqIO.parse(raw_path, 'fasta')
@@ -112,6 +114,24 @@ def extract_raw_dataset_by_partition(raw_path: str | None = None, benchmark: boo
         _create_smiles_benchmark_json(partitioned_prot, organism)
 
 
+def extract_3d_dataset_by_partition(dataset_path: str | None = None, benchmark: bool = False, organism=None):
+    dataset_path = PROT3D_PATH if dataset_path is None else ut.abspath(dataset_path)
+    partitioned_prot = {}
+    with open(dataset_path, 'r') as f:
+        records = json.load(f)
+    for record in tqdm(records):
+        partition = record['partition']
+        if partition in partitioned_prot.keys():
+            partitioned_prot[partition].append(record)
+        else:
+            partitioned_prot[partition] = []
+
+    if not benchmark:
+        _create_graph_training_json(partitioned_prot, split_rate=0.1, organism=organism)
+    else:
+        _create_graph_benchmark_json(partitioned_prot, organism)
+
+
 # *** PRIVATE FUNCTION *** #
 
 def _create_smiles_training_json(partitioned_prot, split_rate: float = 0.1, organism: str | None = None):
@@ -124,28 +144,62 @@ def _create_smiles_training_json(partitioned_prot, split_rate: float = 0.1, orga
     if organism is None:
         for partition, data in partitioned_prot.items():
             train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
-            with open(ut.abspath(f"data_type/sp_data/train_set_partition_{partition}.json"), "w") as file:
+            with open(ut.abspath(f"data/sp_data/train_set_partition_{partition}.json"), "w") as file:
                 json.dump(train_set, fp=file, ensure_ascii=False)
-            with open(ut.abspath(f"data_type/sp_data/test_set_partition_{partition}.json"), "w") as file:
+            with open(ut.abspath(f"data/sp_data/test_set_partition_{partition}.json"), "w") as file:
                 json.dump(test_set, fp=file, ensure_ascii=False)
     else:
         for partition, data in partitioned_prot.items():
             train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
-            with open(ut.abspath(f"data_type/sp_data/train_set_partition_{partition}_{organism}.json"), "w") as file:
+            with open(ut.abspath(f"data/sp_data/train_set_partition_{partition}_{organism}.json"), "w") as file:
                 json.dump(train_set, fp=file, ensure_ascii=False)
-            with open(ut.abspath(f"data_type/sp_data/test_set_partition_{partition}_{organism}.json"), "w") as file:
+            with open(ut.abspath(f"data/sp_data/test_set_partition_{partition}_{organism}.json"), "w") as file:
                 json.dump(test_set, fp=file, ensure_ascii=False)
 
 
 def _create_smiles_benchmark_json(partitioned_prot, organism: str | None = None):
     if organism is None:
         for partition, data in partitioned_prot.items():
-            with open(ut.abspath(f"data_type/sp_data/benchmark_partition_{partition}.json"), "w") as file:
+            with open(ut.abspath(f"data/sp_data/benchmark_partition_{partition}.json"), "w") as file:
                 json.dump(data, fp=file, ensure_ascii=False)
     else:
         for partition, data in partitioned_prot.items():
-            with open(ut.abspath(f"data_type/sp_data/benchmark_partition_{partition}_{organism}.json"), "w") as file:
+            with open(ut.abspath(f"data/sp_data/benchmark_partition_{partition}_{organism}.json"), "w") as file:
                 json.dump(data, fp=file, ensure_ascii=False)
+
+
+def _create_graph_training_json(partitioned_prot, split_rate: float = 0.1, organism: str | None = None):
+    """
+    Each partition is divided into train and test sets with split rates is 0.9 and 0.1 as default
+    :param partitioned_prot:
+    :param split_rate: Percentage of dataset used for testing
+    """
+
+    if organism is None:
+        for partition, data in partitioned_prot.items():
+            train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
+            with open(ut.abspath(f"data/sp_data/train_set_graph_partition_{partition}.json"), "w") as file:
+                json.dump(train_set, fp=file, ensure_ascii=False)
+            with open(ut.abspath(f"data/sp_data/test_set_graph_partition_{partition}.json"), "w") as file:
+                json.dump(test_set, fp=file, ensure_ascii=False)
+    else:
+        for partition, data in partitioned_prot.items():
+            train_set, test_set = train_test_split(data, test_size=split_rate, shuffle=True)
+            with open(ut.abspath(f"data/sp_data/train_set_graph_partition_{partition}_{organism}.json"), "w") as f:
+                json.dump(train_set, fp=f, ensure_ascii=False)
+            with open(ut.abspath(f"data/sp_data/test_set_graph_partition_{partition}_{organism}.json"), "w") as f:
+                json.dump(test_set, fp=f, ensure_ascii=False)
+
+
+def _create_graph_benchmark_json(partitioned_prot, organism: str | None = None):
+    if organism is None:
+        for partition, data in partitioned_prot.items():
+            with open(ut.abspath(f"data/sp_data/benchmark_graph_partition_{partition}.json"), "w") as file:
+                json.dump(data, fp=file, ensure_ascii=False)
+    else:
+        for partition, data in partitioned_prot.items():
+            with open(ut.abspath(f"data/sp_data/benchmark_graph_partition_{partition}_{organism}.json"), "w") as f:
+                json.dump(data, fp=f, ensure_ascii=False)
 
 
 def _split_dataset_by_organism(file=None):
@@ -161,8 +215,8 @@ def _split_dataset_by_organism(file=None):
             eukarya.append(record)
         else:
             others.append(record)
-    SeqIO.write(eukarya, ut.abspath(f"data_type/sp_data/eukarya_dataset.fasta"), format='fasta')
-    SeqIO.write(others, ut.abspath(f"data_type/sp_data/others_dataset.fasta"), format='fasta')
+    SeqIO.write(eukarya, ut.abspath(f"data/sp_data/eukarya_dataset.fasta"), format='fasta')
+    SeqIO.write(others, ut.abspath(f"data/sp_data/others_dataset.fasta"), format='fasta')
 
 
 class SPDataLoader(DataLoader):
@@ -189,8 +243,8 @@ class SPDataLoader(DataLoader):
             worker_init_fn = self.worker_init_fn
         collate_fn = None
         if use_graph_collate_fn:
-            collate_fn = self.collate_fn
-        if use_sp_sampler:
+            collate_fn = SPDataLoader.graph_collate_fn
+        if shuffle and use_sp_sampler:
             # warnings.warn("Do not set `shuffle` while using `use_sp_sampler`. Automatically set `shuffle=True`.")
             sp_sampler = SPBatchRandomSampler(dataset, batch_size, current_epoch, shuffle=True)
             super().__init__(
@@ -220,9 +274,11 @@ class SPDataLoader(DataLoader):
         torch.cuda.manual_seed_all(seed)
 
     @staticmethod
-    def collate_fn(batch):
-        graphs, feats, lbs, organisms = map(list, zip(*batch))
-        g_feats = (dgl.batch(graphs), feats)
+    def graph_collate_fn(batch):
+        graphs, lbs, organisms = map(list, zip(*batch))
+        g_feats = dgl.batch(graphs)
+        lbs = torch.stack(lbs)
+        organisms = torch.stack(organisms)
         return g_feats, lbs, organisms
 
 
@@ -264,5 +320,6 @@ if __name__ == "__main__":
     # extract_raw_dataset_by_partition()
     # extract_raw_dataset_by_partition(raw_path=ut.abspath(params.BENCHMARK_PATH), benchmark=True)
     # _split_dataset_by_organism()
-    extract_raw_dataset_by_partition(raw_path=EUKARYAN_PATH, organism='eukarya')
-    extract_raw_dataset_by_partition(raw_path=OTHERS_PATH, organism='others')
+    # extract_raw_dataset_by_partition(raw_path=EUKARYAN_PATH, organism='eukarya')
+    # extract_raw_dataset_by_partition(raw_path=OTHERS_PATH, organism='others')
+    extract_3d_dataset_by_partition()

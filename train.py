@@ -50,10 +50,16 @@ if __name__ == '__main__':
             logger.experiment.name = f'{params.MODEL_TYPE}_{params.DATA_TYPE}'
         logger.experiment.config['batch_size'] = params.BATCH_SIZE
 
-    resume_ckpt = f'{params.MODEL_TYPE}-{params.DATA_TYPE}-{params.CONF_TYPE}-{int(params.USE_ORGANISM)}_epochs={params.EPOCHS}.ckpt'
-    checkpoint = ut.abspath(f'checkpoints/{resume_ckpt}')
-    if not os.path.exists(checkpoint):
-        checkpoint = None
+    # resume_ckpt = f'{params.MODEL_TYPE}-{params.DATA_TYPE}-{params.CONF_TYPE}-{int(params.USE_ORGANISM)}_epochs={params.EPOCHS}.ckpt'
+    # checkpoint = ut.abspath(f'checkpoints/{resume_ckpt}')
+    # if not os.path.exists(checkpoint):
+    #     checkpoint = None
+
+    checkpoint = None
+
+    trainer_callbacks = [early_stopping]
+    if params.ENABLE_CHECKPOINTING:
+        trainer_callbacks = [model_checkpoint, early_stopping]
 
     sp_module = SPModule(
         model_type=params.MODEL_TYPE,
@@ -78,7 +84,7 @@ if __name__ == '__main__':
         enable_checkpointing=params.ENABLE_CHECKPOINTING,
         val_check_interval=1.0,
         reload_dataloaders_every_n_epochs=1,
-        callbacks=[model_checkpoint, early_stopping],
+        callbacks=trainer_callbacks,
     )
 
     trainer.fit(sp_module, datamodule=sp_data_module, ckpt_path=checkpoint)

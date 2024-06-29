@@ -1,6 +1,6 @@
 import math
+from itertools import islice
 
-import dgl
 import torch
 from dgl.nn.pytorch import GraphConv
 from torch import nn
@@ -77,8 +77,8 @@ class TransformerEncoder(nn.Module):
             num_layers=num_layers
         )
 
-    def forward(self, x):
-        x = self.encoder(x)
+    def forward(self, x, mask=None):
+        x = self.encoder(x, src_key_padding_mask=mask)
         # use average [CLS] token with all other word tokens
         # x = torch.mean(x, dim=1)
 
@@ -208,25 +208,105 @@ class ParallelBiLSTMEncoder(nn.Module):
         pass
 
 
-# class GraphConvEncoder(nn.Module):
-#     def __init__(self, d_model: int = 512, dropout: float = 0.1, use_relu_act: bool = True):
-#         super().__init__()
-#         self.d_model = d_model
-#         self.dropout = dropout
-#         self.use_relu_act = use_relu_act
-#
-#     def forward(self, x):
-#         from_list, to_list, adj_matrix = x
-#         g = dgl.graph((from_list, to_list))
-#         g = dgl.add_self_loop(g)
-#         act = None
-#         if self.use_relu_act:
-#             act = nn.ReLU()
-#         conv = GraphConv(20, self.d_model, norm='both', bias=True, activation=act)
-#         dropout = nn.Dropout(p=self.dropout)
-#         x = conv(g, adj_matrix)
-#         x = dropout(x)
-#         return x
+class NodeApplyModule(nn.Module):
+    """Update the node feature hv with ReLU(Whv+b)."""
+
+    def __init__(self, in_feats, out_feats, activation):
+        super(NodeApplyModule, self).__init__()
+        self.linear = nn.Linear(in_feats, out_feats)
+        self.activation = activation
+
+    def forward(self, node):
+        h = self.linear(node.data)
+        h = self.activation(h)
+        return {'h': h}
+
+
+class GraphConvEncoder(nn.Module):
+    def __init__(self, d_model: int = 512, n_layers=2, dropout: float = 0.1, use_relu_act: bool = True,
+                 d_hidden: int = 1024, use_special_tokens: bool = False):
+        super().__init__()
+        self.d_model = d_model
+        self.use_special_tokens = use_special_tokens
+        self.act = None
+        if use_relu_act:
+            self.act = nn.ReLU()
+        self.convs = nn.ModuleList()
+        convFirst = GraphConv(20, d_hidden, norm='both', bias=True, activation=self.act, allow_zero_in_degree=True)
+        self.convs.append(convFirst)
+
+        for i in range(1, n_layers - 1):
+            convIn = GraphConv(d_hidden, d_hidden, norm='both', bias=True, activation=self.act,
+                               allow_zero_in_degree=True)
+            self.convs.append(convIn)
+
+        convLast = GraphConv(d_hidden, d_model, norm='both', bias=True, activation=self.act,
+                             allow_zero_in_degree=True)
+        self.convs.append(convLast)
+
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x, h):
+        for (i, conv) in enumerate(self.convs):
+            h = conv(x, h)
+        # h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
+        if self.use_special_tokens:
+            h, mask = self.return_batch_plus(h, x.batch_num_nodes(), max_len='longest')
+            # h = torch.reshape(h, (-1, 20, self.d_model))
+            h = self.dropout(h)
+            return h, mask
+        else:
+            h = self.return_batch(h, x.batch_num_nodes(), max_len='longest')
+            h = self.dropout(h)
+            return h
+
+    def return_batch(self, h, batch_num_nodes, max_len: str | int = 70):
+        device = h.get_device()
+        tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
+        ret = []
+        if max_len == "longest":
+            max_len = torch.max(batch_num_nodes).item()
+        if not isinstance(max_len, int):
+            raise ValueError('Use `int` or "longest"')
+
+        for i, sample in enumerate(tmp):
+            if len(sample) > max_len:
+                sample = sample[:max_len]
+            else:
+                while len(sample) < max_len:
+                    pad = torch.zeros(self.d_model, device=device)
+                    sample.append(pad)
+            ret.append(torch.stack(sample))
+
+        return torch.stack(ret)
+
+    def return_batch_plus(self, h, batch_num_nodes, max_len: str | int = 70):
+        device = h.get_device()
+        tmp = [list(islice(iter(h), 0, num_nodes)) for num_nodes in batch_num_nodes]
+        ret = []
+        if max_len == "longest":
+            max_len = torch.max(batch_num_nodes).item()
+        if not isinstance(max_len, int):
+            raise ValueError('Use `int` or "longest"')
+        mask = torch.zeros((len(batch_num_nodes), max_len + 2), dtype=torch.float, device=device)
+        mask[:, -1] = float('-inf')
+        for i, sample in enumerate(tmp):
+            if len(sample) > max_len:
+                sample = sample[:max_len]
+            else:
+                while len(sample) < max_len:
+                    pad = torch.zeros(self.d_model, device=device)
+                    sample.append(pad)
+                    mask[i, len(sample)] = float('-inf')
+            sample = self.add_special_tokens(sample, device)
+            ret.append(torch.stack(sample))
+
+        return torch.stack(ret), mask
+
+    def add_special_tokens(self, sample, device):
+        cls = torch.zeros(self.d_model, device=device)  # begin of sentence [CLS]
+        eos = torch.zeros(self.d_model, device=device)  # end of sentence [EOS]
+        return [cls, *sample, eos]
 
 
 class Classifier(nn.Module):

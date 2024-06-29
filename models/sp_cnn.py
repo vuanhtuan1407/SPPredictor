@@ -19,7 +19,8 @@ class ConvolutionalClassifier(nn.Module):
             n_base=config['n_base']
         )
         self.flatten = nn.Flatten()
-        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=119808)
+        # self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=119808)
+        self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=1024)
         # self.dropout = nn.Dropout(p=0.1)
 
     def forward(self, x):
@@ -50,6 +51,7 @@ class ConvolutionalOrganismClassifier(nn.Module):
             e_dim=config['d_model']
         )
         self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=120832)
+        # self.classifier = Classifier(num_class=len(params.SP_LABELS), d_model=2048)
 
     def forward(self, x, org):
         x = self.input_embedding(x)
