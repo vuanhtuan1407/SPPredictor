@@ -1,4 +1,4 @@
-**1. Environment configuration**
+# 1. Environment configuration
 
 - python version: `python==3.11`
 
@@ -13,8 +13,12 @@
   - Pytorch may need to be installed before installing other libs.
   - In some operating systems based on UNIX like Linux, `dgl` may not work with config `torch==2.1.0+cuda==11.8` smoothly, so only if you are using Windows and want to rebuild our environment exactly, we recommend you install config `pytorch==2.2.0+cuda==12.0` for PyTorch. 
 
+# 2. Data
 
-**2. Using**
+- Newest version of SignalP6.0 dataset can be downloaded [**here**.](https://services.healthtech.dtu.dk/services/SignalP-6.0/public_data/train_set.fasta)
+- Dataset using in this project can be found [**here**.](https://drive.google.com/drive/folders/1FUXhjsiqXVACfRc3SWkOHbZkFqT_aYJJ?usp=sharing), 
+
+# 3. Using
 
 Most of the params for training and testing were adjusted in `params.py`.
 
