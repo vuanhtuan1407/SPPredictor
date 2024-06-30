@@ -22,31 +22,39 @@
 
 Most of the params for training and testing were adjusted in `params.py`.
 
-a. Training
+### a. Training
 
-We provide 3 types of protein representation, which were divided into 3 subfolders in folder `config`. 
+- We provide 3 types of protein representation, which were divided into 3 subfolders in folder `config`. 
 
-Before training a model, you need to create a config file and put it into the correct folder.
+
+- Before training a model, you need to create a config file and put it into the correct folder.
 The config file must be named following this format `<model_type>_<data_type>_<conf_type>.json`. If you only have 1 config for 1 model, you still need to replace `<conf_type>` with `default`.
 
-If you want to create a new model, you must write its structure in a model file and put this file into folder `models`. After that, you need to import this model into `model_utils.py` with the correct place of config.
 
-Adjust the `base_step` method in `lightning_module/sp_module.py` to ensure your model works well.
+- If you want to create a new model, you must write its structure in a model file and put this file into folder `models`. After that, you need to import this model into `model_utils.py` with the correct place of config.
 
-Run `train.py` to perform the training process.
 
-b. Testing
+- Adjust the `base_step` method in `lightning_module/sp_module.py` to ensure your model works well.
 
-After training, your model will be saved into folder `checkpoints`.
 
-Copy the model filename and assign `CHECKPOINT` in `params.py` with this filename.
+- Run `train.py` to perform the training process.
 
-Run `test.py` to perform the testing process.
+### b. Testing
 
-c. Visualization
+- After training, your model will be saved into folder `checkpoints`.
 
-After testing, the evaluating files will be created and saved into folder `out`.
 
-There are 4 important files you may need to concern in folder `out/metrics`: `ap_score.py`, `ap_score_combine_ORG.csv`, `ap_score_combine_TOTAL.csv`, `ap_score_TOTAL.csv`.
+- Copy the model filename and assign `CHECKPOINT` in `params.py` with this filename.
 
-You can use our visualization tools by running `visualization.py` (remember to import all models you need to visualize and remove the model filename extension `.ckpt`) or you can use other apps such as MS Power BI.
+
+- Run `test.py` to perform the testing process.
+
+### c. Visualization
+
+- After testing, the evaluating files will be created and saved into folder `out`.
+
+
+- There are 4 important files you may need to concern in folder `out/metrics`: `ap_score.py`, `ap_score_combine_ORG.csv`, `ap_score_combine_TOTAL.csv`, `ap_score_TOTAL.csv`.
+
+
+- You can use our visualization tools by running `visualization.py` (remember to import all models you need to visualize and remove the model filename extension `.ckpt`) or you can use other apps such as MS Power BI.
