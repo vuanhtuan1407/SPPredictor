@@ -83,8 +83,14 @@ class SPModule(L.LightningModule):
         self.test_outputs_lb_organism = [[], [], [], [], [], []]
         self.test_outputs_pred_organism = [[], [], [], [], [], []]
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x, organism=None):
+        self.model.eval()
+        if self.tokenizer is not None:
+            x = self.tokenize_input(x)
+        if self.use_organism:
+            return self.model(x, organism)
+        else:
+            return self.model(x)
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=0.1)
@@ -277,6 +283,9 @@ class SPModule(L.LightningModule):
         if params.USE_LOGGER:
             self._save_ap_score_to_csv(macro_ap, micro_ap, macro_ap_orgs)
             self._save_metrics_to_csv(metric_dict)
+
+    def predict_step(self, batch, batch_idx):
+        pass
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         self.checkpoint_name = params.CHECKPOINT.split('.')[0]
