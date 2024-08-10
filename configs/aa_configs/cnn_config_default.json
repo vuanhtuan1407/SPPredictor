@@ -1,0 +1,8 @@
+{
+  "vocab_size": 30,
+  "d_model": 1024,
+  "kernel_size": 3,
+  "max_len": 70,
+  "n_base": 512,
+  "tokenizer_path": "tokenizer/tokenizer_aa.json"
+}
